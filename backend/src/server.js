@@ -15,6 +15,7 @@ const kasRoutes = require('./routes/kas.routes')
 const modulRoutes = require('./routes/modul.routes')
 const kampanyeRoutes = require('./routes/kampanye.routes')
 const laporanRoutes = require('./routes/laporan.routes')
+const dataRoutes = require('./routes/data.routes')
 
 const app = express()
 
@@ -56,6 +57,7 @@ app.use('/api/kas', kasRoutes)
 app.use('/api/modul', modulRoutes)
 app.use('/api/kampanye', kampanyeRoutes)
 app.use('/api/laporan', laporanRoutes)
+app.use('/api/data', dataRoutes)         // <- endpoint generik untuk ambil data mentah dari tabel MySQL
 
 // Handler error generik
 app.use((err, req, res, next) => {
