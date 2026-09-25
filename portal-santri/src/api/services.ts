@@ -23,3 +23,19 @@ export function kirimSetoran(kamarId: string, tarifSampahId: string, berat: numb
     body: { kamarId, tarifSampahId, piket: 'Santri (via Portal)', berat },
   })
 }
+
+export interface VerifikasiSetoranResponse {
+  jenis: string
+  beratKg: number
+  poinPerKg: number
+  totalPoin: number
+}
+
+// Menghitung estimasi poin (jenis + berat) tanpa menyimpan data — dipakai untuk
+// menampilkan estimasi poin di layar sebelum santri konfirmasi kirim setoran.
+export function verifikasiSetoranEstimasi(jenis: string, beratKg: number) {
+  return apiFetch<VerifikasiSetoranResponse>('/verifikasi-setoran', {
+    method: 'POST',
+    body: { jenis, beratKg },
+  })
+}

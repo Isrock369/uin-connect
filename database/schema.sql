@@ -199,11 +199,11 @@ CREATE TABLE kampanye_mitra (
 INSERT INTO asrama (nama) VALUES ('Asrama A'), ('Asrama B'), ('Asrama C'), ('Asrama D');
 
 INSERT INTO tarif_sampah (jenis, kategori, poin_per_kg, keterangan) VALUES
-('Organik',        'Organik',  50,  'Sisa makanan, sayuran, buah, daun'),
-('Anorganik',       'Anorganik',200, 'Plastik, kaleng, kaca, logam'),
-('Sampah B3',       'B3',       75,  'Baterai, lampu, obat-obatan, bahan kimia'),
-('Sampah Kertas',   'Kertas',   150, 'Kertas, kardus, koran, buku bekas'),
-('Residu',          'Residu',   0,   'Sampah campuran yang tidak dapat dipilah');
+('Organik',        'Organik',  10,  'Sisa makanan, sayuran, buah, daun'),
+('Anorganik',       'Anorganik',20, 'Plastik, kaleng, kaca, logam'),
+('Sampah B3',       'B3',       10,  'Baterai, lampu, obat-obatan, bahan kimia'),
+('Sampah Kertas',   'Kertas',   20, 'Kertas, kardus, koran, buku bekas'),
+('Residu',          'Residu',   4,   'Sampah campuran yang tidak dapat dipilah');
 
 INSERT INTO kamar (nama, asrama_id, jumlah_santri, poin, last_setoran) VALUES
 ('Al-Amanah', 3, 7,  1890, '2026-09-12'),
