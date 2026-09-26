@@ -73,6 +73,20 @@ export default function KategoriSampah() {
 
   useEffect(loadAll, [])
 
+  // Kalau kategori yang dulu pernah disembunyikan (waktu masih 0 item)
+  // sekarang dipakai lagi oleh item baru, otomatis "un-hide" supaya tidak
+  // nyangkut tersembunyi selamanya.
+  useEffect(() => {
+    setHiddenKategori((prev) => {
+      const masihTersembunyi = prev.filter((k) => !tarif.some((t) => t.kategori === k))
+      if (masihTersembunyi.length !== prev.length) {
+        localStorage.setItem(HIDDEN_KEY, JSON.stringify(masihTersembunyi))
+        return masihTersembunyi
+      }
+      return prev
+    })
+  }, [tarif])
+
   const kategoriDinamis = Array.from(
     new Set([...defaultKategori, ...tarif.map((t) => t.kategori)])
   )
