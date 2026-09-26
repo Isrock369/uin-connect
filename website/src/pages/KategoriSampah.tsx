@@ -10,6 +10,18 @@ import type { TarifSampah } from '../types'
 // memang sudah bertipe teks bebas, jadi tidak perlu migrasi apa pun).
 const defaultKategori = ['Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya']
 
+// Nama kategori (bawaan) yang pernah dihapus lewat tombol ✕ di UI,
+// disimpan di browser admin ini supaya tidak muncul lagi lain kali.
+const HIDDEN_KEY = 'kategoriSampah_hidden'
+
+function loadHiddenKategori(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
 const kategoriColor: Record<string, string> = {
   Plastik: 'var(--color-accent)',
   Kertas: 'var(--color-primary-light)',
@@ -36,6 +48,16 @@ export default function KategoriSampah() {
   const [editTarget, setEditTarget] = useState<TarifSampah | null>(null)
   const [form, setForm] = useState<TarifForm>(emptyForm)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [hiddenKategori, setHiddenKategori] = useState<string[]>(loadHiddenKategori)
+
+  function hapusKategoriDariUI(nama: string) {
+    setHiddenKategori((prev) => {
+      const next = [...prev, nama]
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify(next))
+      return next
+    })
+    if (filterKategori === nama) setFilterKategori('Semua')
+  }
 
   function loadAll() {
     setLoading(true)
@@ -52,7 +74,9 @@ export default function KategoriSampah() {
   // Diurutkan alfabetis supaya konsisten.
   const kategoriDinamis = Array.from(
     new Set([...defaultKategori, ...tarif.map((t) => t.kategori)])
-  ).sort((a, b) => a.localeCompare(b))
+  )
+    .filter((k) => !hiddenKategori.includes(k))
+    .sort((a, b) => a.localeCompare(b))
 
   const kategoriList = ['Semua', ...kategoriDinamis]
 
@@ -112,19 +136,40 @@ export default function KategoriSampah() {
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2 flex-wrap">
-          {kategoriList.map((k) => (
-            <button
-              key={k}
-              onClick={() => setFilterKategori(k)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-              style={{
-                background: filterKategori === k ? 'var(--color-primary)' : 'var(--color-muted)',
-                color: filterKategori === k ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
-              }}
-            >
-              {k}
-            </button>
-          ))}
+          {kategoriList.map((k) => {
+            const jumlahItem = k === 'Semua' ? -1 : tarif.filter((t) => t.kategori === k).length
+            const bisaDihapus = k !== 'Semua' && jumlahItem === 0
+            return (
+              <div key={k} className="relative group">
+                <button
+                  onClick={() => setFilterKategori(k)}
+                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+                  style={{
+                    background: filterKategori === k ? 'var(--color-primary)' : 'var(--color-muted)',
+                    color: filterKategori === k ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
+                    paddingRight: bisaDihapus ? '1.5rem' : undefined,
+                  }}
+                >
+                  {k}
+                </button>
+                {bisaDihapus && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (confirm(`Hapus kategori "${k}" dari daftar? (Tidak ada jenis sampah yang memakainya)`)) {
+                        hapusKategoriDariUI(k)
+                      }
+                    }}
+                    title={`Hapus kategori "${k}"`}
+                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                    style={{ background: 'var(--color-error)', color: 'white' }}
+                  >
+                    <X size={10} />
+                  </button>
+                )}
+              </div>
+            )
+          })}
         </div>
         <button
           onClick={openAdd}
