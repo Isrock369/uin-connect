@@ -68,32 +68,36 @@ export default function Laporan() {
     return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada data untuk dilaporkan.</p>
   }
 
-  const sortedKamar = [...kamarData].sort((a, b) => b.poin - a.poin)
-  const maxPoin = sortedKamar[0].poin
+  // Catatan: MySQL (driver mysql2) sering mengembalikan kolom DECIMAL/FLOAT sebagai string,
+  // bukan number. Semua akumulasi angka di bawah ini dibungkus Number(...) supaya aman
+  // dipakai dengan .toFixed() dan operasi aritmetika lain.
+
+  const sortedKamar = [...kamarData].sort((a, b) => Number(b.poin) - Number(a.poin))
+  const maxPoin = Number(sortedKamar[0].poin)
 
   const jenisTotals: Record<string, number> = {}
   setoranData
     .filter((s) => s.status !== 'ditolak')
     .forEach((s) => {
-      jenisTotals[s.jenisSampah] = (jenisTotals[s.jenisSampah] ?? 0) + s.berat
+      jenisTotals[s.jenisSampah] = (jenisTotals[s.jenisSampah] ?? 0) + Number(s.berat)
     })
   const maxBerat = Math.max(...Object.values(jenisTotals))
 
   const totalBerat = Object.values(jenisTotals).reduce((a, b) => a + b, 0)
-  const organikBerat = penjualanData.reduce((s, p) => s + p.jumlah, 0)
+  const organikBerat = penjualanData.reduce((s, p) => s + Number(p.jumlah), 0)
 
-  const poinDigunakan = penukaranData.reduce((s, p) => s + p.poinDigunakan, 0)
-  const poinBeredar = kamarData.reduce((s, k) => s + k.poin, 0)
+  const poinDigunakan = penukaranData.reduce((s, p) => s + Number(p.poinDigunakan), 0)
+  const poinBeredar = kamarData.reduce((s, k) => s + Number(k.poin), 0)
 
-  const kasTotal = kasData.reduce((acc, t) => (t.jenis === 'masuk' ? acc + t.jumlah : acc - t.jumlah), 0)
-  const kasIn = kasData.filter((t) => t.jenis === 'masuk').reduce((s, t) => s + t.jumlah, 0)
-  const kasOut = kasData.filter((t) => t.jenis === 'keluar').reduce((s, t) => s + t.jumlah, 0)
+  const kasTotal = kasData.reduce((acc, t) => (t.jenis === 'masuk' ? acc + Number(t.jumlah) : acc - Number(t.jumlah)), 0)
+  const kasIn = kasData.filter((t) => t.jenis === 'masuk').reduce((s, t) => s + Number(t.jumlah), 0)
+  const kasOut = kasData.filter((t) => t.jenis === 'keluar').reduce((s, t) => s + Number(t.jumlah), 0)
 
   const barangFreq: Record<string, { nama: string; jumlah: number; poin: number }> = {}
   penukaranData.forEach((p) => {
     if (!barangFreq[p.barangId]) barangFreq[p.barangId] = { nama: p.barangNama, jumlah: 0, poin: 0 }
-    barangFreq[p.barangId].jumlah += p.jumlah
-    barangFreq[p.barangId].poin += p.poinDigunakan
+    barangFreq[p.barangId].jumlah += Number(p.jumlah)
+    barangFreq[p.barangId].poin += Number(p.poinDigunakan)
   })
   const topBarang = Object.values(barangFreq).sort((a, b) => b.poin - a.poin)
 
@@ -170,7 +174,7 @@ export default function Laporan() {
                 <BarRow
                   key={k.id}
                   label={k.nama}
-                  value={k.poin}
+                  value={Number(k.poin)}
                   max={maxPoin}
                   color="var(--color-primary)"
                   unit="pt"
@@ -351,8 +355,8 @@ export default function Laporan() {
               </h3>
               {['Kompos', 'Pakan Maggot'].map((produk) => {
                 const data = penjualanData.filter((p) => p.produk === produk)
-                const totalKg = data.reduce((s, p) => s + p.jumlah, 0)
-                const totalRp = data.reduce((s, p) => s + p.total, 0)
+                const totalKg = data.reduce((s, p) => s + Number(p.jumlah), 0)
+                const totalRp = data.reduce((s, p) => s + Number(p.total), 0)
                 const color = produk === 'Kompos' ? 'var(--color-primary)' : 'var(--color-accent)'
                 return (
                   <div key={produk} className="mb-3 pb-3 border-b border-[--color-border] last:border-0">
