@@ -24,6 +24,15 @@ export interface Asrama { id: string; nama: string }
 export function getAsrama() {
   return apiFetch<Asrama[]>('/asrama', { auth: false })
 }
+export function createAsrama(nama: string) {
+  return apiFetch<{ id: number }>('/asrama', { method: 'POST', body: { nama } })
+}
+export function updateAsrama(id: string, nama: string) {
+  return apiFetch<{ message: string }>(`/asrama/${id}`, { method: 'PUT', body: { nama } })
+}
+export function deleteAsrama(id: string) {
+  return apiFetch<{ message: string }>(`/asrama/${id}`, { method: 'DELETE' })
+}
 
 // ---------- KAMAR ----------
 export function getKamar() {
