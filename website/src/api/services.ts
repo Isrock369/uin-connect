@@ -39,9 +39,18 @@ export function deleteKamar(id: string) {
   return apiFetch<{ message: string }>(`/kamar/${id}`, { method: 'DELETE' })
 }
 
-// ---------- TARIF SAMPAH ----------
+// ---------- TARIF SAMPAH (Kategori Sampah) ----------
 export function getTarifSampah() {
   return apiFetch<TarifSampah[]>('/tarif-sampah')
+}
+export function createTarifSampah(data: Omit<TarifSampah, 'id'>) {
+  return apiFetch<{ id: number }>('/tarif-sampah', { method: 'POST', body: data })
+}
+export function updateTarifSampah(id: string, data: Omit<TarifSampah, 'id'>) {
+  return apiFetch<{ message: string }>(`/tarif-sampah/${id}`, { method: 'PUT', body: data })
+}
+export function deleteTarifSampah(id: string) {
+  return apiFetch<{ message: string }>(`/tarif-sampah/${id}`, { method: 'DELETE' })
 }
 
 // ---------- SETORAN ----------
