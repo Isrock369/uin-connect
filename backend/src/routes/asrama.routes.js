@@ -4,5 +4,7 @@ const { requireAuth } = require('../middleware/auth')
 
 router.get('/', ctrl.getAll) // publik: dipakai dropdown form kamar
 router.post('/', requireAuth, ctrl.create)
+router.put('/:id', requireAuth, ctrl.update)
+router.delete('/:id', requireAuth, ctrl.remove)
 
 module.exports = router
