@@ -8,19 +8,10 @@ import type { TarifSampah } from '../types'
 // Kategori BARU yang diketik user di form akan otomatis tergabung ke sini
 // begitu tersimpan di database (kolom `kategori` di tabel tarif_sampah
 // memang sudah bertipe teks bebas, jadi tidak perlu migrasi apa pun).
+// Dipakai sebagai SARAN di dropdown form tambah/edit saja (supaya admin
+// tetap gampang pilih kategori umum walau belum ada itemnya sama sekali).
+// TIDAK dipakai untuk filter atas — filter atas murni ikut data asli.
 const defaultKategori = ['Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya']
-
-// Nama kategori (bawaan) yang pernah dihapus lewat tombol ✕ di UI,
-// disimpan di browser admin ini supaya tidak muncul lagi lain kali.
-const HIDDEN_KEY = 'kategoriSampah_hidden'
-
-function loadHiddenKategori(): string[] {
-  try {
-    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')
-  } catch {
-    return []
-  }
-}
 
 const kategoriColor: Record<string, string> = {
   Plastik: 'var(--color-accent)',
@@ -49,19 +40,9 @@ export default function KategoriSampah() {
   const [form, setForm] = useState<TarifForm>(emptyForm)
   // deleteTarget sekarang menyimpan id item yang popover konfirmasinya sedang terbuka
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
-  const [hiddenKategori, setHiddenKategori] = useState<string[]>(loadHiddenKategori)
   const [kategoriCustom, setKategoriCustom] = useState(false)
 
   const KATEGORI_BARU_SENTINEL = '__kategori_baru__'
-
-  function hapusKategoriDariUI(nama: string) {
-    setHiddenKategori((prev) => {
-      const next = [...prev, nama]
-      localStorage.setItem(HIDDEN_KEY, JSON.stringify(next))
-      return next
-    })
-    if (filterKategori === nama) setFilterKategori('Semua')
-  }
 
   function loadAll() {
     setLoading(true)
@@ -73,27 +54,20 @@ export default function KategoriSampah() {
 
   useEffect(loadAll, [])
 
-  // Kalau kategori yang dulu pernah disembunyikan (waktu masih 0 item)
-  // sekarang dipakai lagi oleh item baru, otomatis "un-hide" supaya tidak
-  // nyangkut tersembunyi selamanya.
-  useEffect(() => {
-    setHiddenKategori((prev) => {
-      const masihTersembunyi = prev.filter((k) => !tarif.some((t) => t.kategori === k))
-      if (masihTersembunyi.length !== prev.length) {
-        localStorage.setItem(HIDDEN_KEY, JSON.stringify(masihTersembunyi))
-        return masihTersembunyi
-      }
-      return prev
-    })
-  }, [tarif])
-
-  const kategoriDinamis = Array.from(
-    new Set([...defaultKategori, ...tarif.map((t) => t.kategori)])
+  // Filter atas: HANYA kategori yang benar-benar sedang dipakai (punya
+  // minimal 1 item). Otomatis hilang sendiri kalau item terakhirnya
+  // dihapus/diganti kategori lain — tidak perlu tombol hapus manual.
+  const kategoriTerpakai = Array.from(new Set(tarif.map((t) => t.kategori))).sort((a, b) =>
+    a.localeCompare(b)
   )
-    .filter((k) => !hiddenKategori.includes(k))
-    .sort((a, b) => a.localeCompare(b))
+  const kategoriList = ['Semua', ...kategoriTerpakai]
 
-  const kategoriList = ['Semua', ...kategoriDinamis]
+  // Saran di dropdown form: gabungan preset umum + kategori yang sudah
+  // pernah dipakai, supaya admin tetap bisa pilih kategori umum meski
+  // belum ada itemnya.
+  const kategoriSaranForm = Array.from(new Set([...defaultKategori, ...kategoriTerpakai])).sort(
+    (a, b) => a.localeCompare(b)
+  )
 
   const filtered =
     filterKategori === 'Semua' ? tarif : tarif.filter((t) => t.kategori === filterKategori)
@@ -108,7 +82,7 @@ export default function KategoriSampah() {
   function openEdit(t: TarifSampah) {
     setEditTarget(t)
     setForm({ jenis: t.jenis, kategori: t.kategori, poinPerKg: t.poinPerKg, keterangan: t.keterangan })
-    setKategoriCustom(!kategoriDinamis.includes(t.kategori))
+    setKategoriCustom(!kategoriSaranForm.includes(t.kategori))
     setShowModal(true)
   }
 
@@ -153,40 +127,19 @@ export default function KategoriSampah() {
 
       <div className="flex items-center justify-between">
         <div className="flex gap-2 flex-wrap">
-          {kategoriList.map((k) => {
-            const jumlahItem = k === 'Semua' ? -1 : tarif.filter((t) => t.kategori === k).length
-            const bisaDihapus = k !== 'Semua' && jumlahItem === 0
-            return (
-              <div key={k} className="relative group">
-                <button
-                  onClick={() => setFilterKategori(k)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                  style={{
-                    background: filterKategori === k ? 'var(--color-primary)' : 'var(--color-muted)',
-                    color: filterKategori === k ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
-                    paddingRight: bisaDihapus ? '1.5rem' : undefined,
-                  }}
-                >
-                  {k}
-                </button>
-                {bisaDihapus && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      if (confirm(`Hapus kategori "${k}" dari daftar? (Tidak ada jenis sampah yang memakainya)`)) {
-                        hapusKategoriDariUI(k)
-                      }
-                    }}
-                    title={`Hapus kategori "${k}"`}
-                    className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                    style={{ background: 'var(--color-error)', color: 'white' }}
-                  >
-                    <X size={10} />
-                  </button>
-                )}
-              </div>
-            )
-          })}
+          {kategoriList.map((k) => (
+            <button
+              key={k}
+              onClick={() => setFilterKategori(k)}
+              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={{
+                background: filterKategori === k ? 'var(--color-primary)' : 'var(--color-muted)',
+                color: filterKategori === k ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
+              }}
+            >
+              {k}
+            </button>
+          ))}
         </div>
         <button
           onClick={openAdd}
@@ -344,7 +297,7 @@ export default function KategoriSampah() {
                     className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
                     style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
                   >
-                    {kategoriDinamis.map((k) => (
+                    {kategoriSaranForm.map((k) => (
                       <option key={k} value={k}>{k}</option>
                     ))}
                     <option value={KATEGORI_BARU_SENTINEL}>Kategori baru</option>
@@ -364,7 +317,7 @@ export default function KategoriSampah() {
                       type="button"
                       onClick={() => {
                         setKategoriCustom(false)
-                        setForm((f) => ({ ...f, kategori: kategoriDinamis[0] ?? '' }))
+                        setForm((f) => ({ ...f, kategori: kategoriSaranForm[0] ?? '' }))
                       }}
                       className="text-xs mt-1.5 font-medium hover:underline"
                       style={{ color: 'var(--color-primary)' }}
