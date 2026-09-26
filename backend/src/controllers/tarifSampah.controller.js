@@ -10,11 +10,45 @@ async function getAll(req, res) {
 }
 
 async function update(req, res) {
-  const { poinPerKg, keterangan } = req.body
-  await pool.query('UPDATE tarif_sampah SET poin_per_kg = ?, keterangan = ? WHERE id = ?', [
-    poinPerKg, keterangan, req.params.id,
-  ])
+  const { jenis, kategori, poinPerKg, keterangan } = req.body
+  await pool.query(
+    'UPDATE tarif_sampah SET jenis = ?, kategori = ?, poin_per_kg = ?, keterangan = ? WHERE id = ?',
+    [jenis, kategori, poinPerKg, keterangan, req.params.id]
+  )
   res.json({ message: 'Tarif berhasil diperbarui.' })
 }
 
-module.exports = { getAll, update }
+async function create(req, res) {
+  const { jenis, kategori, poinPerKg, keterangan } = req.body
+  if (!jenis || !kategori) {
+    return res.status(400).json({ message: 'Jenis dan kategori wajib diisi.' })
+  }
+  try {
+    const [result] = await pool.query(
+      'INSERT INTO tarif_sampah (jenis, kategori, poin_per_kg, keterangan) VALUES (?, ?, ?, ?)',
+      [jenis, kategori, poinPerKg || 0, keterangan || null]
+    )
+    res.status(201).json({ id: result.insertId })
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(409).json({ message: 'Jenis sampah dengan nama ini sudah ada.' })
+    }
+    throw err
+  }
+}
+
+async function remove(req, res) {
+  try {
+    await pool.query('DELETE FROM tarif_sampah WHERE id = ?', [req.params.id])
+    res.json({ message: 'Kategori berhasil dihapus.' })
+  } catch (err) {
+    if (err.code === 'ER_ROW_IS_REFERENCED_2' || err.code === 'ER_ROW_IS_REFERENCED') {
+      return res.status(409).json({
+        message: 'Kategori ini tidak bisa dihapus karena sudah dipakai di data setoran.',
+      })
+    }
+    throw err
+  }
+}
+
+module.exports = { getAll, create, update, remove }
