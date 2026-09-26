@@ -13,6 +13,30 @@ import type { TarifSampah } from '../types'
 // TIDAK dipakai untuk filter atas — filter atas murni ikut data asli.
 const defaultKategori = ['Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya']
 
+// Kategori bawaan yang pernah dihapus lewat modal "Kelola Kategori" (hanya
+// berlaku untuk kategori yang belum punya item sama sekali), disimpan di
+// browser admin ini supaya tidak muncul lagi jadi saran di form.
+const HIDDEN_KEY = 'kategoriSampah_hidden'
+function loadHiddenKategori(): string[] {
+  try {
+    return JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]')
+  } catch {
+    return []
+  }
+}
+
+// Kalau kategori bawaan (yang masih kosong, belum ada itemnya) di-rename
+// lewat modal "Kelola Kategori", tidak ada baris data yang bisa diupdate ke
+// API, jadi pemetaan nama lama -> nama baru disimpan di sini.
+const RENAME_KEY = 'kategoriSampah_renames'
+function loadKategoriRenames(): Record<string, string> {
+  try {
+    return JSON.parse(localStorage.getItem(RENAME_KEY) || '{}')
+  } catch {
+    return {}
+  }
+}
+
 const kategoriColor: Record<string, string> = {
   Plastik: 'var(--color-accent)',
   Kertas: 'var(--color-primary-light)',
@@ -41,6 +65,14 @@ export default function KategoriSampah() {
   // deleteTarget sekarang menyimpan id item yang popover konfirmasinya sedang terbuka
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [kategoriCustom, setKategoriCustom] = useState(false)
+  const [hiddenKategori, setHiddenKategori] = useState<string[]>(loadHiddenKategori)
+  const [kategoriRenames, setKategoriRenames] = useState<Record<string, string>>(loadKategoriRenames)
+
+  const [showKelolaKategori, setShowKelolaKategori] = useState(false)
+  const [editingKategori, setEditingKategori] = useState<string | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  const [kelolaError, setKelolaError] = useState<string | null>(null)
+  const [kelolaBusy, setKelolaBusy] = useState<string | null>(null)
 
   const KATEGORI_BARU_SENTINEL = '__kategori_baru__'
 
@@ -62,12 +94,87 @@ export default function KategoriSampah() {
   )
   const kategoriList = ['Semua', ...kategoriTerpakai]
 
-  // Saran di dropdown form: gabungan preset umum + kategori yang sudah
-  // pernah dipakai, supaya admin tetap bisa pilih kategori umum meski
-  // belum ada itemnya.
-  const kategoriSaranForm = Array.from(new Set([...defaultKategori, ...kategoriTerpakai])).sort(
+  // Saran di dropdown form: gabungan preset umum (dengan nama barunya kalau
+  // pernah di-rename, dan dikecualikan kalau pernah dihapus) + kategori yang
+  // sudah pernah dipakai di data, supaya admin tetap bisa pilih kategori
+  // umum meski belum ada itemnya.
+  const namaDefaultTampil = defaultKategori
+    .map((k) => kategoriRenames[k] ?? k)
+    .filter((k) => !hiddenKategori.includes(k))
+
+  const kategoriSaranForm = Array.from(new Set([...namaDefaultTampil, ...kategoriTerpakai])).sort(
     (a, b) => a.localeCompare(b)
   )
+
+  function mulaiEditKategori(nama: string) {
+    setKelolaError(null)
+    setEditingKategori(nama)
+    setRenameValue(nama)
+  }
+
+  async function simpanRenameKategori(oldName: string) {
+    const newName = renameValue.trim()
+    if (!newName) {
+      setKelolaError('Nama kategori tidak boleh kosong.')
+      return
+    }
+    if (newName === oldName) {
+      setEditingKategori(null)
+      return
+    }
+    if (kategoriSaranForm.includes(newName)) {
+      setKelolaError(`Kategori "${newName}" sudah ada.`)
+      return
+    }
+
+    setKelolaError(null)
+    setKelolaBusy(oldName)
+    try {
+      // Semua jenis sampah yang sedang memakai kategori ini ikut diupdate ke nama baru.
+      const items = tarif.filter((t) => t.kategori === oldName)
+      for (const item of items) {
+        await updateTarifSampah(item.id, {
+          jenis: item.jenis,
+          kategori: newName,
+          poinPerKg: item.poinPerKg,
+          keterangan: item.keterangan,
+        })
+      }
+
+      // Kalau nama lama itu salah satu kategori bawaan (mungkin belum punya
+      // data sama sekali), simpan pemetaan nama barunya juga.
+      const namaAsli = Object.keys(kategoriRenames).find((k) => (kategoriRenames[k] ?? k) === oldName) ?? oldName
+      if (defaultKategori.includes(namaAsli)) {
+        setKategoriRenames((prev) => {
+          const next = { ...prev, [namaAsli]: newName }
+          localStorage.setItem(RENAME_KEY, JSON.stringify(next))
+          return next
+        })
+      }
+
+      if (items.length > 0) loadAll()
+      if (filterKategori === oldName) setFilterKategori('Semua')
+      setEditingKategori(null)
+    } catch (e) {
+      setKelolaError(e instanceof ApiError ? e.message : 'Gagal mengubah nama kategori.')
+    } finally {
+      setKelolaBusy(null)
+    }
+  }
+
+  function handleHapusKategoriSaran(nama: string) {
+    const jumlah = tarif.filter((t) => t.kategori === nama).length
+    if (jumlah > 0) {
+      setKelolaError(`Tidak bisa dihapus — masih dipakai ${jumlah} jenis sampah. Ubah dulu kategorinya, atau ganti namanya lewat tombol edit.`)
+      return
+    }
+    setKelolaError(null)
+    setHiddenKategori((prev) => {
+      const next = [...prev, nama]
+      localStorage.setItem(HIDDEN_KEY, JSON.stringify(next))
+      return next
+    })
+  }
 
   const filtered =
     filterKategori === 'Semua' ? tarif : tarif.filter((t) => t.kategori === filterKategori)
@@ -141,14 +248,28 @@ export default function KategoriSampah() {
             </button>
           ))}
         </div>
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
-          style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-        >
-          <Plus size={15} />
-          Tambah Jenis Sampah
-        </button>
+        <div className="flex gap-2 shrink-0">
+          <button
+            onClick={() => {
+              setKelolaError(null)
+              setEditingKategori(null)
+              setShowKelolaKategori(true)
+            }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all hover:opacity-80"
+            style={{ borderColor: 'var(--color-border)', color: 'var(--color-foreground)', background: 'var(--color-card)' }}
+          >
+            <Pencil size={14} />
+            Kelola Kategori
+          </button>
+          <button
+            onClick={openAdd}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+            style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+          >
+            <Plus size={15} />
+            Tambah Jenis Sampah
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -246,6 +367,125 @@ export default function KategoriSampah() {
           </div>
         )}
       </div>
+
+      {showKelolaKategori && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
+          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
+                Kelola Kategori
+              </h3>
+              <button onClick={() => setShowKelolaKategori(false)}>
+                <X size={18} style={{ color: 'var(--color-muted-foreground)' }} />
+              </button>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
+              Ubah nama atau hapus kategori yang tidak dipakai lagi.
+            </p>
+
+            {kelolaError && (
+              <div className="rounded-xl p-3 text-sm mb-3" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
+                {kelolaError}
+              </div>
+            )}
+
+            <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
+              {kategoriSaranForm.map((k) => {
+                const jumlahItem = tarif.filter((t) => t.kategori === k).length
+                const sedangEdit = editingKategori === k
+                const sedangProses = kelolaBusy === k
+                return (
+                  <div
+                    key={k}
+                    className="flex items-center gap-2 rounded-xl border px-3 py-2.5"
+                    style={{ borderColor: 'var(--color-border)', background: 'var(--color-background)' }}
+                  >
+                    {sedangEdit ? (
+                      <input
+                        autoFocus
+                        type="text"
+                        value={renameValue}
+                        onChange={(e) => setRenameValue(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') simpanRenameKategori(k)
+                          if (e.key === 'Escape') setEditingKategori(null)
+                        }}
+                        className="flex-1 text-sm px-2 py-1 rounded-lg border focus:outline-none focus:ring-2"
+                        style={{ background: 'var(--color-card)', borderColor: 'var(--color-primary)', color: 'var(--color-foreground)' }}
+                      />
+                    ) : (
+                      <div className="flex-1 text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>
+                        {k}
+                        <span className="ml-2 text-xs font-normal" style={{ color: 'var(--color-muted-foreground)' }}>
+                          {jumlahItem > 0 ? `· ${jumlahItem} jenis` : '· belum dipakai'}
+                        </span>
+                      </div>
+                    )}
+
+                    {sedangEdit ? (
+                      <>
+                        <button
+                          onClick={() => simpanRenameKategori(k)}
+                          disabled={sedangProses}
+                          title="Simpan"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all disabled:opacity-50"
+                          style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+                        >
+                          <Check size={14} />
+                        </button>
+                        <button
+                          onClick={() => setEditingKategori(null)}
+                          title="Batal"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all"
+                          style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => mulaiEditKategori(k)}
+                          title="Ubah nama"
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:opacity-80"
+                          style={{ background: 'var(--color-muted)', color: 'var(--color-foreground)' }}
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => handleHapusKategoriSaran(k)}
+                          disabled={jumlahItem > 0}
+                          title={jumlahItem > 0 ? 'Tidak bisa dihapus, masih dipakai' : 'Hapus kategori'}
+                          className="w-8 h-8 rounded-lg flex items-center justify-center transition-all hover:opacity-80 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:opacity-30"
+                          style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
+                  </div>
+                )
+              })}
+
+              {kategoriSaranForm.length === 0 && (
+                <p className="text-sm text-center py-4" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Belum ada kategori.
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-5">
+              <button
+                onClick={() => setShowKelolaKategori(false)}
+                className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
+                style={{ background: 'var(--color-muted)', color: 'var(--color-foreground)' }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
