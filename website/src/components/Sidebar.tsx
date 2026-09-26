@@ -125,7 +125,7 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
       {/* Portal Santri — aplikasi TERPISAH (kiosk timbang), dibuka di tab baru */}
       <div className="px-3 pb-2">
         
-          href={PORTAL_SANTRI_URL}
+        <a href={PORTAL_SANTRI_URL}
           target="_blank"
           rel="noopener noreferrer"
           className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border"
