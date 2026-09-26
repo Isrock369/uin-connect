@@ -6,6 +6,7 @@ import Ringkasan from './pages/Ringkasan'
 import VerifikasiSetoran from './pages/VerifikasiSetoran'
 import PoinKamar from './pages/PoinKamar'
 import KatalogBarang from './pages/KatalogBarang'
+import KategoriSampah from './pages/KategoriSampah'
 import PenjualanKas from './pages/PenjualanKas'
 import Laporan from './pages/Laporan'
 import Panduan from './pages/Panduan'
@@ -20,6 +21,7 @@ const pageTitles: Record<PageId, string> = {
   verifikasi: 'Verifikasi Setoran',
   'poin-kamar': 'Poin per Kamar',
   katalog: 'Katalog Barang',
+  'kategori-sampah': 'Kategori Sampah',
   'penjualan-kas': 'Penjualan & Kas Pondok',
   laporan: 'Laporan',
   panduan: 'Panduan & Modul Edukasi',
@@ -31,6 +33,7 @@ const pageSubtitles: Record<PageId, string> = {
   verifikasi: 'Tinjau dan setujui setoran sampah dari kamar (dikirim dari Portal Santri)',
   'poin-kamar': 'Kelola saldo poin dan penukaran barang',
   katalog: 'Manajemen stok barang yang bisa ditukar',
+  'kategori-sampah': 'Kelola jenis sampah dan poin per kg — tambah, ubah, atau hapus sesuai kebutuhan',
   'penjualan-kas': 'Catat penjualan organik dan kas pondok',
   laporan: 'Ringkasan data dan analitik periode',
   panduan: 'Modul edukasi cara pilah, cara setor, dan pengolahan sampah',
@@ -60,6 +63,7 @@ function AdminShell() {
     verifikasi: VerifikasiSetoran,
     'poin-kamar': PoinKamar,
     katalog: KatalogBarang,
+    'kategori-sampah': KategoriSampah,
     'penjualan-kas': PenjualanKas,
     laporan: Laporan,
     panduan: Panduan,
