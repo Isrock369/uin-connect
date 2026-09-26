@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react'
-import { Gift, ChevronDown, Trophy, X, Check, Plus, Pencil, Trash2, Users } from 'lucide-react'
+import { Gift, ChevronDown, Trophy, X, Check, Plus, Pencil, Trash2, Users, Settings } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
 import {
   getKamar, getAsrama, createKamar, updateKamar, deleteKamar as deleteKamarApi,
-  getSetoran, getPenukaran, createPenukaran, getKatalog, createAsrama,
+  getSetoran, getPenukaran, createPenukaran, getKatalog, createAsrama, updateAsrama, deleteAsrama,
   type Asrama,
 } from '../api/services'
 import { ApiError } from '../api/client'
@@ -47,6 +47,13 @@ export default function PoinKamar() {
   const [addingAsrama, setAddingAsrama] = useState(false)
   const [newAsramaName, setNewAsramaName] = useState('')
   const [asramaError, setAsramaError] = useState<string | null>(null)
+
+  // Kelola Asrama (edit/hapus) state
+  const [showManageAsrama, setShowManageAsrama] = useState(false)
+  const [editAsramaId, setEditAsramaId] = useState<string | null>(null)
+  const [editAsramaName, setEditAsramaName] = useState('')
+  const [deleteAsramaTarget, setDeleteAsramaTarget] = useState<Asrama | null>(null)
+  const [manageAsramaError, setManageAsramaError] = useState<string | null>(null)
 
   function loadAll() {
     setLoading(true)
@@ -119,6 +126,41 @@ export default function PoinKamar() {
       setNewAsramaName('')
     } catch (e) {
       setAsramaError(e instanceof ApiError ? e.message : 'Gagal menambah asrama.')
+    }
+  }
+
+  function startEditAsrama(a: Asrama) {
+    setEditAsramaId(a.id)
+    setEditAsramaName(a.nama)
+    setManageAsramaError(null)
+  }
+
+  async function saveEditAsrama() {
+    if (!editAsramaId || !editAsramaName.trim()) return
+    setManageAsramaError(null)
+    try {
+      await updateAsrama(editAsramaId, editAsramaName.trim())
+      const freshAsrama = await getAsrama()
+      setAsramaList(freshAsrama)
+      setEditAsramaId(null)
+      setEditAsramaName('')
+      loadAll()
+    } catch (e) {
+      setManageAsramaError(e instanceof ApiError ? e.message : 'Gagal mengubah nama asrama.')
+    }
+  }
+
+  async function confirmDeleteAsrama() {
+    if (!deleteAsramaTarget) return
+    setManageAsramaError(null)
+    try {
+      await deleteAsrama(deleteAsramaTarget.id)
+      const freshAsrama = await getAsrama()
+      setAsramaList(freshAsrama)
+      setDeleteAsramaTarget(null)
+    } catch (e) {
+      setManageAsramaError(e instanceof ApiError ? e.message : 'Gagal menghapus asrama.')
+      setDeleteAsramaTarget(null)
     }
   }
 
@@ -195,14 +237,24 @@ export default function PoinKamar() {
         >
           Daftar Kamar
         </h3>
-        <button
-          onClick={openAddKamar}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
-          style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
-        >
-          <Plus size={15} />
-          Tambah Kamar
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => { setShowManageAsrama(true); setManageAsramaError(null) }}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity border"
+            style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+          >
+            <Settings size={15} />
+            Kelola Asrama
+          </button>
+          <button
+            onClick={openAddKamar}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
+            style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+          >
+            <Plus size={15} />
+            Tambah Kamar
+          </button>
+        </div>
       </div>
 
       {/* ── Kamar list ── */}
@@ -580,6 +632,150 @@ export default function PoinKamar() {
               </button>
               <button
                 onClick={() => deleteKamar(deleteKamarTarget)}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold hover:opacity-80"
+                style={{ background: 'var(--color-error)', color: 'white' }}
+              >
+                Hapus
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Kelola Asrama ── */}
+      {showManageAsrama && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(26,18,8,0.5)' }}
+        >
+          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl max-h-[85vh] overflow-y-auto" style={{ background: 'var(--color-card)' }}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
+                Kelola Asrama
+              </h3>
+              <button onClick={() => { setShowManageAsrama(false); setEditAsramaId(null) }}>
+                <X size={18} style={{ color: 'var(--color-muted-foreground)' }} />
+              </button>
+            </div>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
+              Ubah nama atau hapus asrama yang tidak dipakai lagi.
+            </p>
+
+            {manageAsramaError && (
+              <div className="rounded-xl p-3 mb-3 text-sm" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
+                {manageAsramaError}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              {asramaList.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-center gap-2 p-2.5 rounded-xl border"
+                  style={{ borderColor: 'var(--color-border)', background: 'var(--color-background)' }}
+                >
+                  {editAsramaId === a.id ? (
+                    <>
+                      <input
+                        type="text"
+                        autoFocus
+                        value={editAsramaName}
+                        onChange={(e) => setEditAsramaName(e.target.value)}
+                        className="flex-1 rounded-lg border text-sm px-2.5 py-1.5 focus:outline-none"
+                        style={inputStyle}
+                      />
+                      <button
+                        onClick={saveEditAsrama}
+                        disabled={!editAsramaName.trim()}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 hover:opacity-80 disabled:opacity-40"
+                        style={{ background: 'var(--color-primary)' }}
+                      >
+                        <Check size={14} style={{ color: 'var(--color-primary-foreground)' }} />
+                      </button>
+                      <button
+                        onClick={() => setEditAsramaId(null)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 hover:opacity-70"
+                        style={{ background: 'var(--color-muted)' }}
+                      >
+                        <X size={14} style={{ color: 'var(--color-muted-foreground)' }} />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <span className="flex-1 text-sm font-medium" style={{ color: 'var(--color-foreground)' }}>
+                        {a.nama}
+                      </span>
+                      <button
+                        onClick={() => startEditAsrama(a)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 hover:opacity-70"
+                        style={{ background: 'var(--color-muted)' }}
+                      >
+                        <Pencil size={12} style={{ color: 'var(--color-muted-foreground)' }} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteAsramaTarget(a)}
+                        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 hover:opacity-70"
+                        style={{ background: 'var(--color-error-bg)' }}
+                      >
+                        <Trash2 size={12} style={{ color: 'var(--color-error)' }} />
+                      </button>
+                    </>
+                  )}
+                </div>
+              ))}
+
+              {asramaList.length === 0 && (
+                <p className="text-sm text-center py-6" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Belum ada asrama. Tambahkan lewat form "Tambah Kamar".
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end mt-5">
+              <button
+                onClick={() => { setShowManageAsrama(false); setEditAsramaId(null) }}
+                className="px-4 py-2 rounded-xl text-sm font-medium hover:opacity-80 transition-opacity"
+                style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+              >
+                Tutup
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Modal: Konfirmasi Hapus Asrama ── */}
+      {deleteAsramaTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(26,18,8,0.5)' }}
+        >
+          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+            <div
+              className="w-12 h-12 rounded-full mb-4 flex items-center justify-center mx-auto"
+              style={{ background: 'var(--color-error-bg)' }}
+            >
+              <Trash2 size={22} style={{ color: 'var(--color-error)' }} />
+            </div>
+            <h3
+              className="text-lg font-semibold text-center mb-1"
+              style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}
+            >
+              Hapus "{deleteAsramaTarget.nama}"?
+            </h3>
+            <p className="text-sm text-center mb-5" style={{ color: 'var(--color-muted-foreground)' }}>
+              Asrama yang masih dipakai oleh kamar tidak akan bisa dihapus.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteAsramaTarget(null)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium hover:opacity-80"
+                style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDeleteAsrama}
                 className="flex-1 py-2 rounded-xl text-sm font-semibold hover:opacity-80"
                 style={{ background: 'var(--color-error)', color: 'white' }}
               >
