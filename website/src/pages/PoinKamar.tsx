@@ -3,7 +3,7 @@ import { Gift, ChevronDown, Trophy, X, Check, Plus, Pencil, Trash2, Users } from
 import { formatTanggal } from '../lib/format'
 import {
   getKamar, getAsrama, createKamar, updateKamar, deleteKamar as deleteKamarApi,
-  getSetoran, getPenukaran, createPenukaran, getKatalog,
+  getSetoran, getPenukaran, createPenukaran, getKatalog, createAsrama,
   type Asrama,
 } from '../api/services'
 import { ApiError } from '../api/client'
@@ -44,6 +44,9 @@ export default function PoinKamar() {
   const [editKamarTarget, setEditKamarTarget] = useState<Kamar | null>(null)
   const [kamarForm, setKamarForm] = useState<KamarForm>(emptyKamarForm)
   const [deleteKamarTarget, setDeleteKamarTarget] = useState<string | null>(null)
+  const [addingAsrama, setAddingAsrama] = useState(false)
+  const [newAsramaName, setNewAsramaName] = useState('')
+  const [asramaError, setAsramaError] = useState<string | null>(null)
 
   function loadAll() {
     setLoading(true)
@@ -61,6 +64,9 @@ export default function PoinKamar() {
   function openAddKamar() {
     setEditKamarTarget(null)
     setKamarForm(emptyKamarForm)
+    setAddingAsrama(false)
+    setNewAsramaName('')
+    setAsramaError(null)
     setShowKamarModal(true)
   }
 
@@ -68,6 +74,9 @@ export default function PoinKamar() {
     const asramaMatch = asramaList.find((a) => a.nama === k.asrama)
     setEditKamarTarget(k)
     setKamarForm({ nama: k.nama, asramaId: asramaMatch?.id || '', jumlahSantri: k.jumlahSantri })
+    setAddingAsrama(false)
+    setNewAsramaName('')
+    setAsramaError(null)
     setShowKamarModal(true)
   }
 
@@ -95,6 +104,21 @@ export default function PoinKamar() {
       loadAll()
     } catch (e) {
       setErrorMsg(e instanceof ApiError ? e.message : 'Gagal menghapus kamar.')
+    }
+  }
+
+  async function handleCreateAsrama() {
+    if (!newAsramaName.trim()) return
+    setAsramaError(null)
+    try {
+      const { id } = await createAsrama(newAsramaName.trim())
+      const freshAsrama = await getAsrama()
+      setAsramaList(freshAsrama)
+      setKamarForm((f) => ({ ...f, asramaId: String(id) }))
+      setAddingAsrama(false)
+      setNewAsramaName('')
+    } catch (e) {
+      setAsramaError(e instanceof ApiError ? e.message : 'Gagal menambah asrama.')
     }
   }
 
@@ -429,8 +453,15 @@ export default function PoinKamar() {
                   Asrama
                 </label>
                 <select
-                  value={kamarForm.asramaId}
-                  onChange={(e) => setKamarForm((f) => ({ ...f, asramaId: e.target.value }))}
+                  value={addingAsrama ? '__new__' : kamarForm.asramaId}
+                  onChange={(e) => {
+                    if (e.target.value === '__new__') {
+                      setAddingAsrama(true)
+                    } else {
+                      setAddingAsrama(false)
+                      setKamarForm((f) => ({ ...f, asramaId: e.target.value }))
+                    }
+                  }}
                   className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
                   style={inputStyle}
                 >
@@ -438,7 +469,42 @@ export default function PoinKamar() {
                   {asramaList.map((a) => (
                     <option key={a.id} value={a.id}>{a.nama}</option>
                   ))}
+                  <option value="__new__">+ Tambah asrama baru…</option>
                 </select>
+
+                {addingAsrama && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={newAsramaName}
+                      onChange={(e) => setNewAsramaName(e.target.value)}
+                      placeholder="Nama asrama baru, contoh: Asrama E"
+                      className="flex-1 rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                      style={inputStyle}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleCreateAsrama}
+                      disabled={!newAsramaName.trim()}
+                      className="px-3 py-2.5 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-40"
+                      style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+                    >
+                      Tambah
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setAddingAsrama(false); setNewAsramaName(''); setAsramaError(null) }}
+                      className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
+                      style={{ background: 'var(--color-muted)' }}
+                    >
+                      <X size={14} style={{ color: 'var(--color-muted-foreground)' }} />
+                    </button>
+                  </div>
+                )}
+                {asramaError && (
+                  <p className="text-xs mt-1.5" style={{ color: 'var(--color-error)' }}>{asramaError}</p>
+                )}
               </div>
 
               <div>
