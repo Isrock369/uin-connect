@@ -4,7 +4,11 @@ import { getTarifSampah, createTarifSampah, updateTarifSampah, deleteTarifSampah
 import { ApiError } from '../api/client'
 import type { TarifSampah } from '../types'
 
-const kategoriList = ['Semua', 'Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya']
+// Kategori bawaan, hanya dipakai sebagai starting point / saran awal.
+// Kategori BARU yang diketik user di form akan otomatis tergabung ke sini
+// begitu tersimpan di database (kolom `kategori` di tabel tarif_sampah
+// memang sudah bertipe teks bebas, jadi tidak perlu migrasi apa pun).
+const defaultKategori = ['Plastik', 'Kertas', 'Logam', 'Kaca', 'Lainnya']
 
 const kategoriColor: Record<string, string> = {
   Plastik: 'var(--color-accent)',
@@ -42,6 +46,15 @@ export default function KategoriSampah() {
   }
 
   useEffect(loadAll, [])
+
+  // Gabungkan kategori bawaan + kategori baru apa pun yang sudah pernah
+  // dipakai di data (misalnya diketik manual oleh admin sebelumnya).
+  // Diurutkan alfabetis supaya konsisten.
+  const kategoriDinamis = Array.from(
+    new Set([...defaultKategori, ...tarif.map((t) => t.kategori)])
+  ).sort((a, b) => a.localeCompare(b))
+
+  const kategoriList = ['Semua', ...kategoriDinamis]
 
   const filtered =
     filterKategori === 'Semua' ? tarif : tarif.filter((t) => t.kategori === filterKategori)
@@ -223,16 +236,24 @@ export default function KategoriSampah() {
                 <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
                   Kategori
                 </label>
-                <select
+                <input
+                  type="text"
+                  list="kategori-options"
                   value={form.kategori}
                   onChange={(e) => setForm((f) => ({ ...f, kategori: e.target.value }))}
-                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                  placeholder="Pilih yang sudah ada atau ketik kategori baru"
+                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none focus:ring-2"
                   style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-                >
-                  {kategoriList.filter((k) => k !== 'Semua').map((k) => (
-                    <option key={k} value={k}>{k}</option>
+                />
+                {/* datalist = saran/autocomplete, tapi user tetap bebas ketik teks lain apa pun */}
+                <datalist id="kategori-options">
+                  {kategoriDinamis.map((k) => (
+                    <option key={k} value={k} />
                   ))}
-                </select>
+                </datalist>
+                <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Ketik nama kategori baru jika belum ada di daftar saran.
+                </p>
               </div>
 
               <div>
