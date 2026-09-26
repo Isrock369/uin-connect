@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Check, X, AlertCircle, Filter, Plus } from 'lucide-react'
+import { Check, X, AlertCircle, Filter, Plus, Pencil, Trash2 } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
-import { getSetoran, getKamar, getTarifSampah, verifikasiSetoran } from '../api/services'
+import { getSetoran, getKamar, getTarifSampah, verifikasiSetoran, updateSetoran, deleteSetoran } from '../api/services'
 import { ApiError } from '../api/client'
 import type { Setoran, StatusSetoran, Kamar, TarifSampah } from '../types'
 
@@ -31,7 +31,12 @@ interface SetoranForm {
   berat: number
 }
 
+interface SetoranEditForm extends SetoranForm {
+  tanggal: string
+}
+
 const emptyForm: SetoranForm = { kamarId: '', piket: '', tarifSampahId: '', berat: 0 }
+const emptyEditForm: SetoranEditForm = { kamarId: '', piket: '', tarifSampahId: '', berat: 0, tanggal: '' }
 
 type FilterTab = 'semua' | StatusSetoran
 
@@ -65,6 +70,11 @@ export default function VerifikasiSetoran() {
   const [rejectNote, setRejectNote] = useState('')
   const [showAddModal, setShowAddModal] = useState(false)
   const [form, setForm] = useState<SetoranForm>(emptyForm)
+  const [editTarget, setEditTarget] = useState<Setoran | null>(null)
+  const [editForm, setEditForm] = useState<SetoranEditForm>(emptyEditForm)
+  const [editSubmitting, setEditSubmitting] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Setoran | null>(null)
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false)
 
   function loadAll() {
     setLoading(true)
@@ -134,6 +144,53 @@ export default function VerifikasiSetoran() {
       setErrorMsg(e instanceof ApiError ? e.message : 'Gagal mencatat setoran.')
     }
   }
+
+  function openEdit(s: Setoran) {
+    const tarifMatch = tarifSampah.find((t) => t.jenis === s.jenisSampah)
+    setEditTarget(s)
+    setEditForm({
+      kamarId: s.kamarId,
+      piket: s.piket,
+      tarifSampahId: tarifMatch?.id || '',
+      berat: s.berat,
+      tanggal: s.tanggal,
+    })
+    setErrorMsg(null)
+  }
+
+  async function saveEdit() {
+    if (!editTarget || !editForm.kamarId || !editForm.piket || !editForm.tarifSampahId || editForm.berat <= 0) return
+    setEditSubmitting(true)
+    setErrorMsg(null)
+    try {
+      await updateSetoran(editTarget.id, editForm)
+      setEditTarget(null)
+      loadAll()
+    } catch (e) {
+      setErrorMsg(e instanceof ApiError ? e.message : 'Gagal memperbarui setoran.')
+    } finally {
+      setEditSubmitting(false)
+    }
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    setDeleteSubmitting(true)
+    setErrorMsg(null)
+    try {
+      await deleteSetoran(deleteTarget.id)
+      setDeleteTarget(null)
+      loadAll()
+    } catch (e) {
+      setErrorMsg(e instanceof ApiError ? e.message : 'Gagal menghapus setoran.')
+      setDeleteTarget(null)
+    } finally {
+      setDeleteSubmitting(false)
+    }
+  }
+
+  const editSelectedTarif = tarifSampah.find((t) => t.id === editForm.tarifSampahId)
+  const editEstimasiPoin = editSelectedTarif && editForm.berat > 0 ? Math.round(editSelectedTarif.poinPerKg * editForm.berat) : 0
 
   if (loading) {
     return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Memuat data setoran...</p>
@@ -240,7 +297,7 @@ export default function VerifikasiSetoran() {
                     </div>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2 items-center">
+                    <div className="flex gap-1.5 items-center flex-wrap">
                       {s.status === 'menunggu' && (
                         <>
                           <button
@@ -263,6 +320,22 @@ export default function VerifikasiSetoran() {
                           </button>
                         </>
                       )}
+                      <button
+                        onClick={() => openEdit(s)}
+                        title="Edit setoran"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:opacity-70"
+                        style={{ background: 'var(--color-muted)' }}
+                      >
+                        <Pencil size={12} style={{ color: 'var(--color-muted-foreground)' }} />
+                      </button>
+                      <button
+                        onClick={() => setDeleteTarget(s)}
+                        title="Hapus setoran"
+                        className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:opacity-70"
+                        style={{ background: 'var(--color-error-bg)' }}
+                      >
+                        <Trash2 size={12} style={{ color: 'var(--color-error)' }} />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -407,6 +480,145 @@ export default function VerifikasiSetoran() {
                 style={{ background: 'var(--color-error)', color: 'white' }}
               >
                 Konfirmasi Tolak
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {editTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
+          <div className="w-full max-w-lg rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+            <div className="flex items-center justify-between mb-1">
+              <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
+                Edit Setoran
+              </h3>
+              <button onClick={() => setEditTarget(null)} className="p-1 hover:opacity-60 transition-opacity">
+                <X size={18} style={{ color: 'var(--color-muted-foreground)' }} />
+              </button>
+            </div>
+            <p className="text-sm mb-5" style={{ color: 'var(--color-muted-foreground)' }}>
+              {editTarget.status === 'disetujui'
+                ? 'Setoran ini sudah disetujui — poin di saldo kamar akan otomatis disesuaikan mengikuti perubahan.'
+                : 'Ubah data setoran sebelum diverifikasi.'}
+            </p>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <InputField label="Kamar">
+                  <select
+                    value={editForm.kamarId}
+                    onChange={(e) => setEditForm((f) => ({ ...f, kamarId: e.target.value }))}
+                    className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                    style={inputStyle}
+                  >
+                    <option value="">Pilih kamar…</option>
+                    {kamarData.map((k) => (
+                      <option key={k.id} value={k.id}>{k.nama} ({k.asrama})</option>
+                    ))}
+                  </select>
+                </InputField>
+
+                <InputField label="Nama Piket">
+                  <input
+                    type="text"
+                    value={editForm.piket}
+                    onChange={(e) => setEditForm((f) => ({ ...f, piket: e.target.value }))}
+                    placeholder="Nama santri piket"
+                    className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                    style={inputStyle}
+                  />
+                </InputField>
+              </div>
+
+              <InputField label="Jenis Sampah">
+                <select
+                  value={editForm.tarifSampahId}
+                  onChange={(e) => setEditForm((f) => ({ ...f, tarifSampahId: e.target.value }))}
+                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                  style={inputStyle}
+                >
+                  <option value="">Pilih jenis sampah…</option>
+                  {tarifSampah.map((t) => (
+                    <option key={t.id} value={t.id}>{t.jenis} — {t.poinPerKg} pt/kg</option>
+                  ))}
+                </select>
+              </InputField>
+
+              <InputField label="Berat (kg)">
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={editForm.berat || ''}
+                  onChange={(e) => setEditForm((f) => ({ ...f, berat: parseFloat(e.target.value) || 0 }))}
+                  placeholder="0.0"
+                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                  style={inputStyle}
+                />
+              </InputField>
+
+              {editEstimasiPoin > 0 && (
+                <div className="rounded-xl p-4 flex items-center justify-between" style={{ background: 'var(--color-secondary)' }}>
+                  <span className="text-sm font-medium" style={{ color: 'var(--color-secondary-foreground)' }}>Poin (setelah diubah)</span>
+                  <span className="text-xl font-bold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-primary)' }}>
+                    {editEstimasiPoin} pt
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 mt-5">
+              <button
+                onClick={() => setEditTarget(null)}
+                className="px-4 py-2 rounded-xl text-sm font-medium hover:opacity-80 transition-opacity"
+                style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={saveEdit}
+                disabled={!editForm.kamarId || !editForm.piket || !editForm.tarifSampahId || editForm.berat <= 0 || editSubmitting}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+              >
+                <Check size={14} />
+                {editSubmitting ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+            <div className="w-12 h-12 rounded-full mb-4 flex items-center justify-center mx-auto" style={{ background: 'var(--color-error-bg)' }}>
+              <Trash2 size={22} style={{ color: 'var(--color-error)' }} />
+            </div>
+            <h3 className="text-lg font-semibold text-center mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
+              Hapus Setoran?
+            </h3>
+            <p className="text-sm text-center mb-5" style={{ color: 'var(--color-muted-foreground)' }}>
+              {deleteTarget.status === 'disetujui'
+                ? `Setoran ${deleteTarget.kamarNama} ini sudah disetujui — ${deleteTarget.poin} poin akan otomatis dikurangi dari saldo kamar.`
+                : `Setoran ${deleteTarget.kamarNama} ini akan dihapus permanen.`}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2 rounded-xl text-sm font-medium hover:opacity-80"
+                style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+              >
+                Batal
+              </button>
+              <button
+                onClick={confirmDelete}
+                disabled={deleteSubmitting}
+                className="flex-1 py-2 rounded-xl text-sm font-semibold hover:opacity-80 disabled:opacity-50"
+                style={{ background: 'var(--color-error)', color: 'white' }}
+              >
+                {deleteSubmitting ? 'Menghapus...' : 'Hapus'}
               </button>
             </div>
           </div>
