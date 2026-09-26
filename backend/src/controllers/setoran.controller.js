@@ -95,4 +95,86 @@ async function verifikasi(req, res) {
   }
 }
 
-module.exports = { getAll, create, verifikasi }
+// PUT /api/setoran/:id  (protected — edit data setoran, dipakai pengurus)
+// Kalau setoran sudah 'disetujui', poin lama di kamar dikurangi dulu lalu
+// poin baru (hasil recalculate) ditambahkan, semua dalam SATU transaksi.
+async function update(req, res) {
+  const { kamarId, tarifSampahId, piket, tanggal, berat } = req.body
+  if (!kamarId || !tarifSampahId || !piket || !berat) {
+    return res.status(400).json({ message: 'kamarId, tarifSampahId, piket, dan berat wajib diisi.' })
+  }
+
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+
+    const [rows] = await conn.query('SELECT * FROM setoran WHERE id = ? FOR UPDATE', [req.params.id])
+    const lama = rows[0]
+    if (!lama) {
+      await conn.rollback()
+      return res.status(404).json({ message: 'Setoran tidak ditemukan.' })
+    }
+
+    const [tarifRows] = await conn.query('SELECT poin_per_kg AS poinPerKg FROM tarif_sampah WHERE id = ?', [tarifSampahId])
+    if (tarifRows.length === 0) {
+      await conn.rollback()
+      return res.status(404).json({ message: 'Jenis sampah tidak ditemukan.' })
+    }
+    const poinBaru = Math.round(tarifRows[0].poinPerKg * Number(berat))
+
+    // Kalau setoran lama sudah disetujui dan kamarnya berubah atau tetap sama,
+    // batalkan dulu efek poin lama sebelum menerapkan yang baru.
+    if (lama.status === 'disetujui') {
+      await conn.query('UPDATE kamar SET poin = poin - ? WHERE id = ?', [lama.poin, lama.kamar_id])
+      await conn.query('UPDATE kamar SET poin = poin + ? WHERE id = ?', [poinBaru, kamarId])
+    }
+
+    await conn.query(
+      `UPDATE setoran SET kamar_id = ?, tarif_sampah_id = ?, piket = ?, tanggal = ?, berat_kg = ?, poin = ? WHERE id = ?`,
+      [kamarId, tarifSampahId, piket, tanggal || lama.tanggal, berat, poinBaru, req.params.id]
+    )
+
+    await conn.commit()
+    res.json({ message: 'Setoran berhasil diperbarui.' })
+  } catch (err) {
+    await conn.rollback()
+    console.error(err)
+    res.status(500).json({ message: 'Gagal memperbarui setoran.' })
+  } finally {
+    conn.release()
+  }
+}
+
+// DELETE /api/setoran/:id  (protected)
+// Kalau setoran sudah 'disetujui', poinnya dikurangi dulu dari saldo kamar
+// sebelum baris setoran dihapus, supaya saldo tetap konsisten.
+async function remove(req, res) {
+  const conn = await pool.getConnection()
+  try {
+    await conn.beginTransaction()
+
+    const [rows] = await conn.query('SELECT * FROM setoran WHERE id = ? FOR UPDATE', [req.params.id])
+    const setoran = rows[0]
+    if (!setoran) {
+      await conn.rollback()
+      return res.status(404).json({ message: 'Setoran tidak ditemukan.' })
+    }
+
+    if (setoran.status === 'disetujui') {
+      await conn.query('UPDATE kamar SET poin = poin - ? WHERE id = ?', [setoran.poin, setoran.kamar_id])
+    }
+
+    await conn.query('DELETE FROM setoran WHERE id = ?', [req.params.id])
+
+    await conn.commit()
+    res.json({ message: 'Setoran berhasil dihapus.' })
+  } catch (err) {
+    await conn.rollback()
+    console.error(err)
+    res.status(500).json({ message: 'Gagal menghapus setoran.' })
+  } finally {
+    conn.release()
+  }
+}
+
+module.exports = { getAll, create, verifikasi, update, remove }
