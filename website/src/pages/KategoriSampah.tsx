@@ -49,6 +49,9 @@ export default function KategoriSampah() {
   const [form, setForm] = useState<TarifForm>(emptyForm)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [hiddenKategori, setHiddenKategori] = useState<string[]>(loadHiddenKategori)
+  const [kategoriCustom, setKategoriCustom] = useState(false)
+
+  const KATEGORI_BARU_SENTINEL = '__kategori_baru__'
 
   function hapusKategoriDariUI(nama: string) {
     setHiddenKategori((prev) => {
@@ -86,12 +89,16 @@ export default function KategoriSampah() {
   function openAdd() {
     setEditTarget(null)
     setForm(emptyForm)
+    setKategoriCustom(false)
     setShowModal(true)
   }
 
   function openEdit(t: TarifSampah) {
     setEditTarget(t)
     setForm({ jenis: t.jenis, kategori: t.kategori, poinPerKg: t.poinPerKg, keterangan: t.keterangan })
+    // Kalau kategori item ini bukan salah satu dari daftar saran, otomatis
+    // buka dalam mode "ketik sendiri" supaya nilainya tidak berubah diam-diam.
+    setKategoriCustom(!kategoriDinamis.includes(t.kategori))
     setShowModal(true)
   }
 
@@ -281,24 +288,50 @@ export default function KategoriSampah() {
                 <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
                   Kategori
                 </label>
-                <input
-                  type="text"
-                  list="kategori-options"
-                  value={form.kategori}
-                  onChange={(e) => setForm((f) => ({ ...f, kategori: e.target.value }))}
-                  placeholder="Pilih yang sudah ada atau ketik kategori baru"
-                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none focus:ring-2"
-                  style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-                />
-                {/* datalist = saran/autocomplete, tapi user tetap bebas ketik teks lain apa pun */}
-                <datalist id="kategori-options">
-                  {kategoriDinamis.map((k) => (
-                    <option key={k} value={k} />
-                  ))}
-                </datalist>
-                <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-                  Ketik nama kategori baru jika belum ada di daftar saran.
-                </p>
+
+                {!kategoriCustom ? (
+                  <select
+                    value={form.kategori}
+                    onChange={(e) => {
+                      if (e.target.value === KATEGORI_BARU_SENTINEL) {
+                        setKategoriCustom(true)
+                        setForm((f) => ({ ...f, kategori: '' }))
+                      } else {
+                        setForm((f) => ({ ...f, kategori: e.target.value }))
+                      }
+                    }}
+                    className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                    style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+                  >
+                    {kategoriDinamis.map((k) => (
+                      <option key={k} value={k}>{k}</option>
+                    ))}
+                    <option value={KATEGORI_BARU_SENTINEL}>✏️ Kategori baru...</option>
+                  </select>
+                ) : (
+                  <>
+                    <input
+                      type="text"
+                      autoFocus
+                      value={form.kategori}
+                      onChange={(e) => setForm((f) => ({ ...f, kategori: e.target.value }))}
+                      placeholder="Ketik nama kategori baru"
+                      className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none focus:ring-2"
+                      style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setKategoriCustom(false)
+                        setForm((f) => ({ ...f, kategori: kategoriDinamis[0] ?? '' }))
+                      }}
+                      className="text-xs mt-1.5 font-medium hover:underline"
+                      style={{ color: 'var(--color-primary)' }}
+                    >
+                      ← Pilih dari daftar yang sudah ada
+                    </button>
+                  </>
+                )}
               </div>
 
               <div>
