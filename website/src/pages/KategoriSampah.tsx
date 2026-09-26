@@ -306,7 +306,7 @@ export default function KategoriSampah() {
                     {kategoriDinamis.map((k) => (
                       <option key={k} value={k}>{k}</option>
                     ))}
-                    <option value={KATEGORI_BARU_SENTINEL}>✏️ Kategori baru...</option>
+                    <option value={KATEGORI_BARU_SENTINEL}>Kategori baru</option>
                   </select>
                 ) : (
                   <>
