@@ -8,4 +8,4 @@ router.put('/:id/verifikasi', requireAuth, ctrl.verifikasi) // protected: Websit
 router.put('/:id', requireAuth, ctrl.update)                // protected: edit data setoran
 router.delete('/:id', requireAuth, ctrl.remove)             // protected: hapus setoran
 
-module.exports = { getAll, create, verifikasi, update, remove }
+module.exports = router
