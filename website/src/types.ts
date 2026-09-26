@@ -3,6 +3,7 @@ export type PageId =
   | 'verifikasi'
   | 'poin-kamar'
   | 'katalog'
+  | 'kategori-sampah'
   | 'penjualan-kas'
   | 'laporan'
   | 'panduan'
