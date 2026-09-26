@@ -4,7 +4,7 @@ import { getKatalog, createBarang, updateBarang, deleteBarang } from '../api/ser
 import { ApiError } from '../api/client'
 import type { BarangKatalog } from '../types'
 
-const kategoriList = ['Semua', 'Kebutuhan Mandi', 'Alat Tulis', 'Kebersihan', 'Makanan']
+const defaultKategoriList = ['Kebutuhan Mandi', 'Alat Tulis', 'Kebersihan', 'Makanan']
 
 const kategoriColor: Record<string, string> = {
   'Kebutuhan Mandi': 'var(--color-primary)',
@@ -32,6 +32,12 @@ export default function KatalogBarang() {
   const [editTarget, setEditTarget] = useState<BarangKatalog | null>(null)
   const [form, setForm] = useState<BarangForm>(emptyForm)
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
+  const [addingKategori, setAddingKategori] = useState(false)
+
+  const kategoriList = [
+    'Semua',
+    ...Array.from(new Set([...defaultKategoriList, ...barang.map((b) => b.kategori)])).sort(),
+  ]
 
   function loadAll() {
     setLoading(true)
@@ -49,17 +55,19 @@ export default function KatalogBarang() {
   function openAdd() {
     setEditTarget(null)
     setForm(emptyForm)
+    setAddingKategori(false)
     setShowModal(true)
   }
 
   function openEdit(b: BarangKatalog) {
     setEditTarget(b)
     setForm({ nama: b.nama, kategori: b.kategori, hargaPoin: b.hargaPoin, stok: b.stok, deskripsi: b.deskripsi })
+    setAddingKategori(false)
     setShowModal(true)
   }
 
   async function handleSave() {
-    if (!form.nama || form.hargaPoin <= 0) return
+    if (!form.nama || !form.kategori.trim() || form.hargaPoin <= 0) return
     setErrorMsg(null)
     try {
       if (editTarget) {
@@ -251,16 +259,46 @@ export default function KatalogBarang() {
                 <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
                   Kategori
                 </label>
-                <select
-                  value={form.kategori}
-                  onChange={(e) => setForm((f) => ({ ...f, kategori: e.target.value }))}
-                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
-                  style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
-                >
-                  {kategoriList.filter((k) => k !== 'Semua').map((k) => (
-                    <option key={k} value={k}>{k}</option>
-                  ))}
-                </select>
+                {!addingKategori ? (
+                  <select
+                    value={form.kategori}
+                    onChange={(e) => {
+                      if (e.target.value === '__new__') {
+                        setAddingKategori(true)
+                        setForm((f) => ({ ...f, kategori: '' }))
+                      } else {
+                        setForm((f) => ({ ...f, kategori: e.target.value }))
+                      }
+                    }}
+                    className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                    style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+                  >
+                    {kategoriList.filter((k) => k !== 'Semua').map((k) => (
+                      <option key={k} value={k}>{k}</option>
+                    ))}
+                    <option value="__new__">+ Tambah kategori baru…</option>
+                  </select>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={form.kategori}
+                      onChange={(e) => setForm((f) => ({ ...f, kategori: e.target.value }))}
+                      placeholder="Nama kategori baru"
+                      className="flex-1 rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
+                      style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => { setAddingKategori(false); setForm((f) => ({ ...f, kategori: kategoriList.filter((k) => k !== 'Semua')[0] || '' })) }}
+                      className="px-3 py-2.5 rounded-xl text-xs font-medium whitespace-nowrap hover:opacity-80"
+                      style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+                    >
+                      Pilih dari daftar
+                    </button>
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
