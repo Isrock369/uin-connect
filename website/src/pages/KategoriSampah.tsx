@@ -47,6 +47,7 @@ export default function KategoriSampah() {
   const [showModal, setShowModal] = useState(false)
   const [editTarget, setEditTarget] = useState<TarifSampah | null>(null)
   const [form, setForm] = useState<TarifForm>(emptyForm)
+  // deleteTarget sekarang menyimpan id item yang popover konfirmasinya sedang terbuka
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null)
   const [hiddenKategori, setHiddenKategori] = useState<string[]>(loadHiddenKategori)
   const [kategoriCustom, setKategoriCustom] = useState(false)
@@ -72,9 +73,6 @@ export default function KategoriSampah() {
 
   useEffect(loadAll, [])
 
-  // Gabungkan kategori bawaan + kategori baru apa pun yang sudah pernah
-  // dipakai di data (misalnya diketik manual oleh admin sebelumnya).
-  // Diurutkan alfabetis supaya konsisten.
   const kategoriDinamis = Array.from(
     new Set([...defaultKategori, ...tarif.map((t) => t.kategori)])
   )
@@ -96,8 +94,6 @@ export default function KategoriSampah() {
   function openEdit(t: TarifSampah) {
     setEditTarget(t)
     setForm({ jenis: t.jenis, kategori: t.kategori, poinPerKg: t.poinPerKg, keterangan: t.keterangan })
-    // Kalau kategori item ini bukan salah satu dari daftar saran, otomatis
-    // buka dalam mode "ketik sendiri" supaya nilainya tidak berubah diam-diam.
     setKategoriCustom(!kategoriDinamis.includes(t.kategori))
     setShowModal(true)
   }
@@ -192,7 +188,7 @@ export default function KategoriSampah() {
         {filtered.map((t) => (
           <div
             key={t.id}
-            className="rounded-2xl border border-[--color-border] p-5 flex flex-col gap-3 transition-all hover:shadow-sm"
+            className="relative rounded-2xl border border-[--color-border] p-5 flex flex-col gap-3 transition-all hover:shadow-sm"
             style={{ background: 'var(--color-card)' }}
           >
             <div
@@ -234,7 +230,7 @@ export default function KategoriSampah() {
                   <Pencil size={12} style={{ color: 'var(--color-muted-foreground)' }} />
                 </button>
                 <button
-                  onClick={() => setDeleteTarget(t.id)}
+                  onClick={() => setDeleteTarget(deleteTarget === t.id ? null : t.id)}
                   className="w-7 h-7 rounded-lg flex items-center justify-center transition-all hover:opacity-70"
                   style={{ background: 'var(--color-error-bg)' }}
                 >
@@ -242,6 +238,37 @@ export default function KategoriSampah() {
                 </button>
               </div>
             </div>
+
+            {deleteTarget === t.id && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setDeleteTarget(null)} />
+                <div
+                  className="absolute z-50 right-0 bottom-14 w-56 rounded-xl border p-3 shadow-lg"
+                  style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <p className="text-xs mb-3" style={{ color: 'var(--color-foreground)' }}>
+                    Hapus <strong>{t.jenis}</strong>? Tidak bisa dikembalikan.
+                  </p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setDeleteTarget(null)}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-medium hover:opacity-80"
+                      style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
+                    >
+                      Batal
+                    </button>
+                    <button
+                      onClick={() => handleDelete(t.id)}
+                      className="flex-1 py-1.5 rounded-lg text-xs font-semibold hover:opacity-80"
+                      style={{ background: 'var(--color-error)', color: 'white' }}
+                    >
+                      Hapus
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         ))}
 
@@ -378,38 +405,6 @@ export default function KategoriSampah() {
               >
                 <Check size={14} />
                 {editTarget ? 'Simpan Perubahan' : 'Tambahkan'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
-            <div className="w-12 h-12 rounded-full mb-4 flex items-center justify-center mx-auto" style={{ background: 'var(--color-error-bg)' }}>
-              <Trash2 size={22} style={{ color: 'var(--color-error)' }} />
-            </div>
-            <h3 className="text-lg font-semibold text-center mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
-              Hapus Jenis Sampah?
-            </h3>
-            <p className="text-sm text-center mb-5" style={{ color: 'var(--color-muted-foreground)' }}>
-              Jenis sampah yang dihapus tidak dapat dikembalikan.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setDeleteTarget(null)}
-                className="flex-1 py-2 rounded-xl text-sm font-medium hover:opacity-80"
-                style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
-              >
-                Batal
-              </button>
-              <button
-                onClick={() => handleDelete(deleteTarget)}
-                className="flex-1 py-2 rounded-xl text-sm font-semibold hover:opacity-80"
-                style={{ background: 'var(--color-error)', color: 'white' }}
-              >
-                Hapus
               </button>
             </div>
           </div>
