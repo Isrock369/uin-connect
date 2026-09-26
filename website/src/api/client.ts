@@ -4,15 +4,15 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
 const TOKEN_KEY = 'bs_website_token'
 
 export function getToken(): string | null {
-  return localStorage.getItem(TOKEN_KEY)
+  return sessionStorage.getItem(TOKEN_KEY)
 }
 
 export function setToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token)
+  sessionStorage.setItem(TOKEN_KEY, token)
 }
 
 export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY)
+  sessionStorage.removeItem(TOKEN_KEY)
 }
 
 export class ApiError extends Error {
