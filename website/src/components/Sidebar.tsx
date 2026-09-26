@@ -7,6 +7,7 @@ import {
   BarChart3,
   BookOpen,
   Megaphone,
+  Recycle,
   ChevronRight,
   Smartphone,
   LogOut,
@@ -30,6 +31,7 @@ const navItems: NavItem[] = [
   { id: 'verifikasi', label: 'Verifikasi Setoran', icon: ClipboardCheck },
   { id: 'poin-kamar', label: 'Poin per Kamar', icon: Trophy },
   { id: 'katalog', label: 'Katalog Barang', icon: ShoppingBag },
+  { id: 'kategori-sampah', label: 'Kategori Sampah', icon: Recycle },
   { id: 'penjualan-kas', label: 'Penjualan & Kas', icon: Wallet },
   { id: 'laporan', label: 'Laporan', icon: BarChart3 },
   { id: 'panduan', label: 'Panduan & Modul', icon: BookOpen, section: 'Edukasi & Mitra' },
@@ -122,7 +124,7 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
 
       {/* Portal Santri — aplikasi TERPISAH (kiosk timbang), dibuka di tab baru */}
       <div className="px-3 pb-2">
-        <a
+        
           href={PORTAL_SANTRI_URL}
           target="_blank"
           rel="noopener noreferrer"
