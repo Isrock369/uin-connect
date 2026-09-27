@@ -118,7 +118,7 @@ export default function Laporan() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
+      <div className="no-print flex items-center justify-between">
         <div className="flex gap-2">
           {(['minggu', 'bulan'] as PeriodId[]).map((p) => (
             <button
@@ -135,6 +135,7 @@ export default function Laporan() {
           ))}
         </div>
         <button
+          onClick={() => window.print()}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity border border-[--color-border]"
           style={{ color: 'var(--color-foreground)', background: 'var(--color-card)' }}
         >
@@ -143,7 +144,11 @@ export default function Laporan() {
         </button>
       </div>
 
-      <div className="flex gap-2 border-b border-[--color-border]">
+      <h2 className="hidden print:block text-lg font-semibold" style={{ color: 'var(--color-foreground)' }}>
+        Laporan Bank Sampah — {period === 'minggu' ? 'Minggu Ini' : 'Bulan Ini'}
+      </h2>
+
+      <div className="no-print flex gap-2 border-b border-[--color-border]">
         {([
           { id: 'poin', label: 'Poin & Distribusi Barang' },
           { id: 'sampah', label: 'Sampah per Kategori' },
@@ -162,7 +167,7 @@ export default function Laporan() {
           </button>
         ))}
       </div>
-
+      
       {activeTab === 'poin' && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
