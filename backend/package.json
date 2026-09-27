@@ -5,10 +5,11 @@
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
-    "start": "node src/server.js",
-    "dev": "nodemon src/server.js",
-    "seed": "node src/utils/seedAdmin.js"
-  },
+  "start": "node src/server.js",
+  "dev": "nodemon src/server.js",
+  "seed": "node src/utils/seedAdmin.js",
+  "reset-transaksi": "node src/utils/resetTransaksi.js"
+},
   "dependencies": {
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
