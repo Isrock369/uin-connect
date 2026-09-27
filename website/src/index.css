@@ -65,3 +65,35 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted-foreground);
 }
+
+
+/* ------------------------------------------------------------------
+   PRINT / EKSPOR PDF
+   Dipakai lewat window.print() (misalnya tombol "Ekspor PDF" di
+   halaman Laporan). Sidebar, header, dan kontrol interaktif (tombol,
+   tab) disembunyikan; hanya konten laporan yang dicetak/disimpan
+   sebagai PDF lewat dialog print browser.
+   ------------------------------------------------------------------- */
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  .app-shell {
+    display: block !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .app-shell main {
+    overflow: visible !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+
+  html, body {
+    height: auto !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+}
