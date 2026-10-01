@@ -1,20 +1,22 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { Menu, X } from 'lucide-react'
 import Sidebar from './components/Sidebar'
 import Login from './pages/Login'
-import Ringkasan from './pages/Ringkasan'
-import VerifikasiSetoran from './pages/VerifikasiSetoran'
-import PoinKamar from './pages/PoinKamar'
-import KatalogBarang from './pages/KatalogBarang'
-import KategoriSampah from './pages/KategoriSampah'
-import PenjualanKas from './pages/PenjualanKas'
-import Laporan from './pages/Laporan'
-import Panduan from './pages/Panduan'
-import Kampanye from './pages/Kampanye'
 import logoSrc from './assets/logo.jpeg'
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { getSetoran } from './api/services'
 import type { PageId } from './types'
+
+// Halaman dimuat saat dibuka saja (lazy loading) agar buka pertama lebih cepat
+const Ringkasan = lazy(() => import('./pages/Ringkasan'))
+const VerifikasiSetoran = lazy(() => import('./pages/VerifikasiSetoran'))
+const PoinKamar = lazy(() => import('./pages/PoinKamar'))
+const KatalogBarang = lazy(() => import('./pages/KatalogBarang'))
+const KategoriSampah = lazy(() => import('./pages/KategoriSampah'))
+const PenjualanKas = lazy(() => import('./pages/PenjualanKas'))
+const Laporan = lazy(() => import('./pages/Laporan'))
+const Panduan = lazy(() => import('./pages/Panduan'))
+const Kampanye = lazy(() => import('./pages/Kampanye'))
 
 const pageTitles: Record<PageId, string> = {
   ringkasan: 'Dashboard',
@@ -56,6 +58,7 @@ function AdminShell() {
   function navigate(page: PageId) {
     setCurrentPage(page)
     setSidebarOpen(false)
+    document.querySelector('main')?.scrollTo(0, 0)
   }
 
   const PageMap: Record<PageId, React.ComponentType> = {
@@ -73,7 +76,7 @@ function AdminShell() {
   const PageComponent = PageMap[currentPage]
 
   return (
-    <div className="flex h-screen overflow-hidden" style={{ background: 'var(--color-background)' }}>
+    <div className="flex h-dvh overflow-hidden" style={{ background: 'var(--color-background)' }}>
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
@@ -89,7 +92,7 @@ function AdminShell() {
           <div className="lg:hidden absolute right-0 top-3 translate-x-full">
             <button
               onClick={() => setSidebarOpen(false)}
-              className="ml-2 p-1.5 rounded-lg"
+              className="ml-2 p-2.5 rounded-lg"
               style={{ background: 'var(--color-card)' }}
             >
               <X size={16} style={{ color: 'var(--color-muted-foreground)' }} />
@@ -113,7 +116,7 @@ function AdminShell() {
         >
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-1.5 rounded-lg -ml-1"
+            className="p-2.5 rounded-lg -ml-2"
             style={{ background: 'var(--color-muted)' }}
           >
             <Menu size={18} style={{ color: 'var(--color-foreground)' }} />
@@ -144,8 +147,21 @@ function AdminShell() {
           </h1>
         </div>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
-          <PageComponent />
+        <main
+          className="flex-1 overflow-y-auto p-4 md:p-5 lg:p-6"
+          style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+        >
+          <Suspense
+            fallback={
+              <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>
+                Memuat halaman...
+              </p>
+            }
+          >
+            <div key={currentPage} className="page-enter">
+              <PageComponent />
+            </div>
+          </Suspense>
         </main>
       </div>
     </div>
@@ -157,7 +173,7 @@ function Gate() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-background)' }}>
+      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--color-background)' }}>
         <p style={{ color: 'var(--color-muted-foreground)' }}>Memuat...</p>
       </div>
     )
