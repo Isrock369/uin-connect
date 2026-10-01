@@ -112,7 +112,7 @@ export default function App() {
 
   if (loadingData) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--color-background)' }}>
+      <div className="min-h-dvh flex items-center justify-center" style={{ background: 'var(--color-background)' }}>
         <p style={{ color: 'var(--color-muted-foreground)' }}>Memuat Portal Santri...</p>
       </div>
     )
@@ -120,7 +120,7 @@ export default function App() {
 
   if (loadError) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-6 text-center" style={{ background: 'var(--color-background)' }}>
+      <div className="min-h-dvh flex flex-col items-center justify-center p-6 text-center" style={{ background: 'var(--color-background)' }}>
         <AlertCircle size={40} style={{ color: 'var(--color-error)' }} className="mb-3" />
         <p className="text-sm mb-4" style={{ color: 'var(--color-error)' }}>{loadError}</p>
         <button
@@ -137,7 +137,7 @@ export default function App() {
   if (step === 'sukses') {
     return (
       <div
-        className="min-h-screen flex flex-col items-center justify-center p-6 text-center"
+        className="min-h-dvh flex flex-col items-center justify-center p-6 text-center"
         style={{ background: 'var(--color-background)' }}
       >
         <div
@@ -196,7 +196,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: 'var(--color-background)' }}>
+    <div className="min-h-dvh flex flex-col" style={{ background: 'var(--color-background)' }}>
       {/* Header */}
       <header
         className="shrink-0 px-4 py-3 border-b flex items-center gap-3"
@@ -293,7 +293,7 @@ export default function App() {
           <div>
             <button
               onClick={() => setStep('kamar')}
-              className="flex items-center gap-1 text-sm mb-3"
+              className="flex items-center gap-1 text-sm mb-3 py-2"
               style={{ color: 'var(--color-muted-foreground)' }}
             >
               <ChevronLeft size={13} /> Ganti Kamar
@@ -361,7 +361,7 @@ export default function App() {
           <div>
             <button
               onClick={() => { setStep('jenis'); resetSensor() }}
-              className="flex items-center gap-1 text-sm mb-3"
+              className="flex items-center gap-1 text-sm mb-3 py-2"
               style={{ color: 'var(--color-muted-foreground)' }}
             >
               <ChevronLeft size={13} /> Ganti Jenis
