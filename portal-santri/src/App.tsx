@@ -202,7 +202,18 @@ export default function App() {
         className="shrink-0 px-4 py-3 border-b flex items-center gap-3"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
-        <img src={logoSrc} alt="Logo" style={{ height: '32px', objectFit: 'contain' }} />
+        // SESUDAH
+<button
+  onClick={resetAll}
+  disabled={submitting}
+  aria-label="Kembali ke awal"
+  className="flex items-center gap-2 transition-opacity active:opacity-70 disabled:opacity-60"
+>
+  <img src={logoSrc} alt="" className="h-8 w-8 object-contain" />
+  <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>
+    MIU Connect
+  </span>
+</button>
         <span
           className="ml-auto text-xs font-semibold px-2.5 py-1 rounded-full"
           style={{ background: 'var(--color-secondary)', color: 'var(--color-primary)' }}
