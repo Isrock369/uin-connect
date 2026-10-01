@@ -121,7 +121,17 @@ function AdminShell() {
           >
             <Menu size={18} style={{ color: 'var(--color-foreground)' }} />
           </button>
-          <img src={logoSrc} alt="Logo" style={{ height: '36px', objectFit: 'contain' }} />
+          // SESUDAH
+<button
+  onClick={() => navigate('ringkasan')}
+  aria-label="Ke Dashboard"
+  className="flex items-center gap-2 transition-opacity active:opacity-70"
+>
+  <img src={logoSrc} alt="" className="h-9 w-9 object-contain" />
+  <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>
+    MIU Connect
+  </span>
+</button>
         </header>
 
         <header
