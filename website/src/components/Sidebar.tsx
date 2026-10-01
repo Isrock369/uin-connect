@@ -59,15 +59,18 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
       className="w-60 shrink-0 flex flex-col h-dvh overflow-hidden border-r"
       style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
     >
-      {/* Brand */}
-      <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--color-border)' }}>
-        <img
-          src={logoSrc}
-          alt="MIU-CONNECT"
-          className="w-full h-auto"
-          style={{ maxHeight: '72px', objectFit: 'contain', objectPosition: 'left center' }}
-        />
-      </div>
+{/* Brand */}
+<button
+  onClick={() => onNavigate('ringkasan')}
+  aria-label="Ke Dashboard"
+  className="w-full flex items-center gap-2.5 px-4 py-3 border-b text-left transition-opacity active:opacity-70"
+  style={{ borderColor: 'var(--color-border)' }}
+>
+  <img src={logoSrc} alt="" className="h-11 w-11 shrink-0 object-contain" />
+  <span className="text-base font-bold leading-tight" style={{ color: 'var(--color-primary)' }}>
+    MIU Connect
+  </span>
+</button>
 
       {/* Nav */}
       <nav className="flex-1 overflow-y-auto px-3 py-3">
