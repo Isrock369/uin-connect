@@ -56,7 +56,7 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
     .toUpperCase()
   return (
     <aside
-      className="w-60 shrink-0 flex flex-col h-screen overflow-hidden border-r"
+      className="w-60 shrink-0 flex flex-col h-dvh overflow-hidden border-r"
       style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
     >
       {/* Brand */}
@@ -87,23 +87,8 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
               )}
               <button
                 onClick={() => onNavigate(item.id)}
-                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm font-medium transition-colors mb-0.5"
-                style={{
-                  background: isActive ? 'var(--color-primary)' : 'transparent',
-                  color: isActive ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
-                }}
-                onMouseEnter={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'var(--color-secondary)'
-                    e.currentTarget.style.color = 'var(--color-foreground)'
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  if (!isActive) {
-                    e.currentTarget.style.background = 'transparent'
-                    e.currentTarget.style.color = 'var(--color-muted-foreground)'
-                  }
-                }}
+                className="nav-item w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors mb-0.5"
+                data-active={isActive}
               >
                 <Icon size={15} className="shrink-0" />
                 <span className="flex-1 text-left text-sm">{item.label}</span>
@@ -124,26 +109,11 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
 
       {/* Portal Santri — aplikasi TERPISAH (kiosk timbang), dibuka di tab baru */}
       <div className="px-3 pb-2">
-        
-        <a href={PORTAL_SANTRI_URL}
+        <a
+          href={PORTAL_SANTRI_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all border"
-          style={{
-            background: 'var(--color-secondary)',
-            borderColor: 'var(--color-border)',
-            color: 'var(--color-primary)',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'var(--color-primary)'
-            e.currentTarget.style.color = 'var(--color-primary-foreground)'
-            e.currentTarget.style.borderColor = 'var(--color-primary)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'var(--color-secondary)'
-            e.currentTarget.style.color = 'var(--color-primary)'
-            e.currentTarget.style.borderColor = 'var(--color-border)'
-          }}
+          className="portal-link w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors border"
         >
           <Smartphone size={15} className="shrink-0" />
           <span className="flex-1 text-left">Portal Santri</span>
@@ -169,7 +139,7 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
           <button
             onClick={onLogout}
             title="Keluar"
-            className="p-1.5 rounded-lg shrink-0"
+            className="p-2.5 rounded-lg shrink-0"
             style={{ background: 'var(--color-muted)' }}
           >
             <LogOut size={14} style={{ color: 'var(--color-muted-foreground)' }} />
