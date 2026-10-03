@@ -3,7 +3,7 @@ import { Scale, Wifi, CheckCircle2, ChevronLeft, RefreshCw, Send, Activity, Aler
 import logoSrc from './assets/logo.jpeg'
 import { getKamar, getTarifSampah, kirimSetoran } from './api/services'
 import { ApiError } from './api/client'
-import { bacaTimbangan, TIMBANGAN_URL } from './api/timbangan'
+import { bacaTimbangan, MODE_LANGSUNG, SUMBER_TIMBANGAN } from './api/timbangan'
 import type { Kamar, TarifSampah } from './types'
 
 type Step = 'kamar' | 'jenis' | 'sensor' | 'sukses'
@@ -90,6 +90,13 @@ export default function App() {
         if (!aktifRef.current) return
         gagal = 0
 
+        if (r.online === false) {
+          stopPolling()
+          setSensorStatus('idle')
+          setSensorError('Timbangan offline. Pastikan timbangan menyala dan tersambung ke WiFi/internet.')
+          return
+        }
+
         if (!r.sensorOk) {
           stopPolling()
           setSensorStatus('idle')
@@ -122,8 +129,10 @@ export default function App() {
           stopPolling()
           setSensorStatus('idle')
           setSensorError(
-            `Tidak bisa terhubung ke timbangan (${TIMBANGAN_URL}). ` +
-              'Pastikan timbangan menyala dan satu WiFi dengan perangkat ini.',
+            MODE_LANGSUNG
+              ? `Tidak bisa terhubung ke timbangan (${SUMBER_TIMBANGAN}). ` +
+                  'Pastikan timbangan menyala dan satu WiFi dengan perangkat ini.'
+              : 'Tidak bisa terhubung ke server. Periksa koneksi internet perangkat ini.',
           )
           return
         }
