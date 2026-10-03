@@ -17,6 +17,7 @@ const modulRoutes = require('./routes/modul.routes')
 const kampanyeRoutes = require('./routes/kampanye.routes')
 const laporanRoutes = require('./routes/laporan.routes')
 const dataRoutes = require('./routes/data.routes')
+const timbanganRoutes = require('./routes/timbangan.routes')
 
 const app = express()
 
@@ -60,6 +61,7 @@ app.use('/api/modul', modulRoutes)
 app.use('/api/kampanye', kampanyeRoutes)
 app.use('/api/laporan', laporanRoutes)
 app.use('/api/data', dataRoutes)         // <- endpoint generik untuk ambil data mentah dari tabel MySQL
+app.use('/api/timbangan', timbanganRoutes) // <- berat dari timbangan IoT (ESP32 kirim, Portal Santri baca)
 
 // Handler error generik
 app.use((err, req, res, next) => {
