@@ -1,10 +1,15 @@
-// Membaca berat dari timbangan IoT (ESP32 + HX711) lewat WiFi lokal.
-// Alamat timbangan bisa diatur lewat file .env di folder portal-santri:
-//   VITE_TIMBANGAN_URL=http://192.168.1.50
-// Kalau tidak diisi, dipakai http://timbangan.local (mDNS dari ESP32).
-export const TIMBANGAN_URL = String(
-  import.meta.env.VITE_TIMBANGAN_URL || 'http://timbangan.local',
-).replace(/\/$/, '')
+// Membaca berat dari timbangan IoT (ESP32 + HX711).
+//
+// Ada 2 cara, dipilih otomatis lewat file .env / pengaturan Vercel:
+//  1) LEWAT BACKEND (default, cocok untuk portal di Vercel):
+//     ESP32 mengirim berat ke backend, portal membaca GET {VITE_API_URL}/timbangan.
+//  2) LANGSUNG KE ESP32 (hanya untuk tes lokal, portal harus http://localhost):
+//     isi VITE_TIMBANGAN_URL=http://192.168.1.50 maka portal membaca GET {url}/berat.
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
+const LANGSUNG = String(import.meta.env.VITE_TIMBANGAN_URL || '').replace(/\/$/, '')
+
+export const MODE_LANGSUNG = LANGSUNG !== ''
+export const SUMBER_TIMBANGAN = MODE_LANGSUNG ? `${LANGSUNG}/berat` : `${API_URL}/timbangan`
 
 export class TimbanganError extends Error {}
 
@@ -13,18 +18,19 @@ export interface BacaanTimbangan {
   stabil: boolean // true kalau angka sudah terkunci (tidak berubah lagi)
   status: 'mengukur' | 'stabil'
   sensorOk: boolean // false kalau HX711 tidak terbaca
+  online?: boolean // hanya ada lewat backend: false kalau ESP32 berhenti mengirim data
 }
 
-export async function bacaTimbangan(timeoutMs = 2000): Promise<BacaanTimbangan> {
+export async function bacaTimbangan(timeoutMs = 3000): Promise<BacaanTimbangan> {
   const ctrl = new AbortController()
   const timer = setTimeout(() => ctrl.abort(), timeoutMs)
   try {
-    const res = await fetch(`${TIMBANGAN_URL}/berat`, { signal: ctrl.signal, cache: 'no-store' })
-    if (!res.ok) throw new TimbanganError(`Timbangan membalas error ${res.status}.`)
+    const res = await fetch(SUMBER_TIMBANGAN, { signal: ctrl.signal, cache: 'no-store' })
+    if (!res.ok) throw new TimbanganError(`Server membalas error ${res.status}.`)
     return (await res.json()) as BacaanTimbangan
   } catch (e) {
     if (e instanceof TimbanganError) throw e
-    throw new TimbanganError('Tidak bisa terhubung ke timbangan.')
+    throw new TimbanganError('Tidak bisa terhubung.')
   } finally {
     clearTimeout(timer)
   }
