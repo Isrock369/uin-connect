@@ -3,10 +3,17 @@ import { Scale, Wifi, CheckCircle2, ChevronLeft, RefreshCw, Send, Activity, Aler
 import logoSrc from './assets/logo.jpeg'
 import { getKamar, getTarifSampah, kirimSetoran } from './api/services'
 import { ApiError } from './api/client'
+import { bacaTimbangan, TIMBANGAN_URL } from './api/timbangan'
 import type { Kamar, TarifSampah } from './types'
 
 type Step = 'kamar' | 'jenis' | 'sensor' | 'sukses'
 type SensorStatus = 'idle' | 'connecting' | 'measuring' | 'stable'
+
+// ── Pengaturan pembacaan timbangan asli (ESP32) ──
+const BERAT_MIN_KG = 0.01 // di bawah ini dianggap timbangan kosong
+const POLL_MS = 300 // seberapa sering web menanyakan berat ke timbangan
+const STABIL_BERTURUT = 2 // butuh 2x balasan "stabil" yang sama berturut-turut
+const MAKS_GAGAL = 3 // gagal 3x berturut-turut -> tampilkan pesan error
 
 const JENIS_CONFIG: Record<string, { emoji: string; color: string; bg: string; border: string }> = {
   Organik: { emoji: '🍃', color: '#15803D', bg: '#F0FDF4', border: '#86EFAC' },
@@ -33,7 +40,9 @@ export default function App() {
   const [sensorStatus, setSensorStatus] = useState<SensorStatus>('idle')
   const [displayWeight, setDisplayWeight] = useState(0)
   const [finalWeight, setFinalWeight] = useState(0)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const aktifRef = useRef(false)
+  const [sensorError, setSensorError] = useState<string | null>(null)
   const [successPoin, setSuccessPoin] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -48,36 +57,86 @@ export default function App() {
   }
 
   useEffect(loadData, [])
-  useEffect(() => () => { if (intervalRef.current) clearInterval(intervalRef.current) }, [])
+  useEffect(() => () => stopPolling(), [])
 
+  function stopPolling() {
+    aktifRef.current = false
+    if (pollingRef.current) {
+      clearTimeout(pollingRef.current)
+      pollingRef.current = null
+    }
+  }
+
+  // Membaca berat ASLI dari timbangan ESP32 (GET /berat). Angka yang diterima
+  // sama dengan yang tampil di LCD. Saat ESP32 menyatakan "stabil" (angka sudah
+  // terkunci) dan ada beban, berat dikunci dan siap dikirim sebagai setoran.
   function activateSensor() {
+    stopPolling()
+    setSensorError(null)
     setSensorStatus('connecting')
     setDisplayWeight(0)
     setFinalWeight(0)
-    setTimeout(() => {
-      setSensorStatus('measuring')
-      const target = Math.round((Math.random() * 3.8 + 0.4) * 100) / 100
-      let ticks = 0
-      const total = 28
-      intervalRef.current = setInterval(() => {
-        ticks++
-        const t = ticks / total
-        const osc = Math.sin(ticks * 1.2) * Math.exp(-ticks * 0.18)
-        const val = target * (1 - Math.exp(-t * 5)) + target * osc * 0.25
-        const noise = (Math.random() - 0.5) * (1 - t) * 0.2
-        setDisplayWeight(Math.max(0, Math.round((val + noise) * 100) / 100))
-        if (ticks >= total) {
-          clearInterval(intervalRef.current!)
-          setDisplayWeight(target)
-          setFinalWeight(target)
-          setSensorStatus('stable')
+    aktifRef.current = true
+
+    let tersambung = false
+    let gagal = 0
+    let stabilCount = 0
+    let stabilBerat = -1
+
+    const tick = async () => {
+      if (!aktifRef.current) return
+      try {
+        const r = await bacaTimbangan()
+        if (!aktifRef.current) return
+        gagal = 0
+
+        if (!r.sensorOk) {
+          stopPolling()
+          setSensorStatus('idle')
+          setSensorError('Sensor load cell tidak terbaca. Periksa kabel HX711 di timbangan.')
+          return
         }
-      }, 170)
-    }, 1400)
+
+        if (!tersambung) {
+          tersambung = true
+          setSensorStatus('measuring')
+        }
+        setDisplayWeight(r.berat)
+
+        if (r.stabil && r.berat >= BERAT_MIN_KG) {
+          stabilCount = r.berat === stabilBerat ? stabilCount + 1 : 1
+          stabilBerat = r.berat
+          if (stabilCount >= STABIL_BERTURUT) {
+            setFinalWeight(r.berat)
+            setSensorStatus('stable')
+            stopPolling()
+            return
+          }
+        } else {
+          stabilCount = 0
+          stabilBerat = -1
+        }
+      } catch {
+        gagal++
+        if (gagal >= MAKS_GAGAL) {
+          stopPolling()
+          setSensorStatus('idle')
+          setSensorError(
+            `Tidak bisa terhubung ke timbangan (${TIMBANGAN_URL}). ` +
+              'Pastikan timbangan menyala dan satu WiFi dengan perangkat ini.',
+          )
+          return
+        }
+      }
+      if (aktifRef.current) pollingRef.current = setTimeout(tick, POLL_MS)
+    }
+
+    tick()
   }
 
   function resetSensor() {
-    if (intervalRef.current) clearInterval(intervalRef.current)
+    stopPolling()
+    setSensorError(null)
     setSensorStatus('idle')
     setDisplayWeight(0)
     setFinalWeight(0)
@@ -163,7 +222,7 @@ export default function App() {
           {[
             { label: 'Kamar', value: selectedKamar?.nama ?? '' },
             { label: 'Jenis Sampah', value: selectedJenis?.jenis ?? '' },
-            { label: 'Berat Terdeteksi', value: `${finalWeight} kg` },
+            { label: 'Berat Terdeteksi', value: `${finalWeight.toFixed(2)} kg` },
             { label: 'Estimasi Poin', value: successPoin > 0 ? `+${successPoin} poin` : '—', accent: true },
           ].map((row) => (
             <div
@@ -202,18 +261,17 @@ export default function App() {
         className="shrink-0 px-4 py-3 border-b flex items-center gap-3"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
-        // SESUDAH
-<button
-  onClick={resetAll}
-  disabled={submitting}
-  aria-label="Kembali ke awal"
-  className="flex items-center gap-2 transition-opacity active:opacity-70 disabled:opacity-60"
->
-  <img src={logoSrc} alt="" className="h-8 w-8 object-contain" />
-  <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>
-    MIU Connect
-  </span>
-</button>
+        <button
+          onClick={resetAll}
+          disabled={submitting}
+          aria-label="Kembali ke awal"
+          className="flex items-center gap-2 transition-opacity active:opacity-70 disabled:opacity-60"
+        >
+          <img src={logoSrc} alt="" className="h-8 w-8 object-contain" />
+          <span className="text-base font-bold" style={{ color: 'var(--color-primary)' }}>
+            MIU Connect
+          </span>
+        </button>
         <span
           className="ml-auto text-xs font-semibold px-2.5 py-1 rounded-full"
           style={{ background: 'var(--color-secondary)', color: 'var(--color-primary)' }}
@@ -397,13 +455,13 @@ export default function App() {
               Sensor Timbangan IoT
             </h2>
 
-            {submitError && (
+            {(submitError || sensorError) && (
               <div
                 className="mb-4 rounded-xl p-3 text-sm flex items-center gap-2"
                 style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
               >
                 <AlertCircle size={14} className="shrink-0" />
-                {submitError}
+                {sensorError || submitError}
               </div>
             )}
 
@@ -488,7 +546,11 @@ export default function App() {
                   <div className="w-full">
                     <div className="flex items-center gap-1.5 mb-1.5 justify-center">
                       <Activity size={11} style={{ color: '#86EFAC' }} />
-                      <span className="text-xs" style={{ color: '#86EFAC' }}>Mendeteksi berat sampah...</span>
+                      <span className="text-xs" style={{ color: '#86EFAC' }}>
+                        {displayWeight < BERAT_MIN_KG
+                          ? 'Letakkan sampah pada timbangan...'
+                          : 'Mendeteksi berat sampah...'}
+                      </span>
                     </div>
                     <div className="h-1 rounded-full overflow-hidden mx-4" style={{ background: '#1A3D24' }}>
                       <div
@@ -539,7 +601,7 @@ export default function App() {
                     style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
                   >
                     <Send size={18} />
-                    {submitting ? 'Mengirim...' : `Kirim Setoran (${finalWeight} kg)`}
+                    {submitting ? 'Mengirim...' : `Kirim Setoran (${finalWeight.toFixed(2)} kg)`}
                   </button>
                   <button
                     onClick={resetSensor}
