@@ -183,7 +183,8 @@ CREATE TABLE kampanye_mitra (
   logo_emoji        VARCHAR(10) NULL,
   judul_kampanye    VARCHAR(150) NOT NULL,
   deskripsi         TEXT NOT NULL,
-  jenis_sampah      JSON NOT NULL,              -- contoh: ["Anorganik","Sampah Kertas"]
+  jenis_sampah      JSON NOT NULL,              -- contoh: ["Anorganik","Kertas"]
+  minimal_berat     DECIMAL(8,2) NOT NULL DEFAULT 0, -- kg, 0 = tanpa minimal
   bonus_keterangan  VARCHAR(255) NOT NULL,
   periode_mulai     DATE NOT NULL,
   periode_selesai   DATE NOT NULL,
