@@ -1,17 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Plus, X, Check, Pencil, Trash2, Calendar, Phone, AlertCircle, Megaphone } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
-import { getKampanye, createKampanye, updateKampanye, deleteKampanye } from '../api/services'
+import { getKampanye, getTarifSampah, createKampanye, updateKampanye, deleteKampanye } from '../api/services'
 import { ApiError } from '../api/client'
-import type { Kampanye, StatusKampanye } from '../types'
+import type { Kampanye, StatusKampanye, TarifSampah } from '../types'
 
 const statusConfig: Record<StatusKampanye, { label: string; bg: string; text: string; dot: string }> = {
   aktif: { label: 'Aktif', bg: 'var(--color-success-bg)', text: 'var(--color-success)', dot: '#1B7A40' },
   mendatang: { label: 'Mendatang', bg: 'var(--color-warning-bg)', text: 'var(--color-warning)', dot: '#C8962B' },
   selesai: { label: 'Selesai', bg: 'var(--color-muted)', text: 'var(--color-muted-foreground)', dot: '#9CA3AF' },
 }
-
-const jenisSampahOptions = ['Organik', 'Anorganik', 'Kertas', 'B3', 'Residu']
 
 interface KampanyeForm {
   mitra: string
@@ -51,6 +49,7 @@ const inputStyle: React.CSSProperties = {
 
 export default function Kampanye() {
   const [kampanye, setKampanye] = useState<Kampanye[]>([])
+  const [tarifSampah, setTarifSampah] = useState<TarifSampah[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<'semua' | StatusKampanye>('semua')
@@ -62,8 +61,8 @@ export default function Kampanye() {
 
   function loadAll() {
     setLoading(true)
-    getKampanye()
-      .then(setKampanye)
+    Promise.all([getKampanye(), getTarifSampah()])
+      .then(([k, t]) => { setKampanye(k); setTarifSampah(t) })
       .catch((e) => setErrorMsg(e instanceof ApiError ? e.message : 'Gagal memuat kampanye.'))
       .finally(() => setLoading(false))
   }
@@ -527,8 +526,13 @@ export default function Kampanye() {
                 <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
                   Jenis Sampah yang Dicakup
                 </label>
+                {tarifSampah.length === 0 && (
+                  <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                    Belum ada jenis sampah. Tambahkan dulu di menu Kategori Sampah.
+                  </p>
+                )}
                 <div className="flex gap-2 flex-wrap">
-                  {jenisSampahOptions.map((j) => (
+                  {tarifSampah.map((t) => t.jenis).map((j) => (
                     <button
                       key={j}
                       onClick={() => toggleJenis(j)}
