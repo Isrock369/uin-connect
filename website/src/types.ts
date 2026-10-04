@@ -103,6 +103,7 @@ export interface Kampanye {
   judulKampanye: string
   deskripsi: string
   jenisSampah: string[]
+  minimalBerat: number
   bonusKeterangan: string
   periodeMultai: string
   periodeSelesai: string

@@ -39,7 +39,7 @@ const pageSubtitles: Record<PageId, string> = {
   'penjualan-kas': 'Catat penjualan organik dan kas pondok',
   laporan: 'Ringkasan data dan analitik periode',
   panduan: 'Modul edukasi cara pilah, cara setor, dan pengolahan sampah',
-  kampanye: 'Program kerjasama dan reward dari mitra eksternal',
+  kampanye: 'Program kerjasama dan reward dari instansi eksternal',
 }
 
 function AdminShell() {
