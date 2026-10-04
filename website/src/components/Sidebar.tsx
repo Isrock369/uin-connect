@@ -34,7 +34,7 @@ const navItems: NavItem[] = [
   { id: 'kategori-sampah', label: 'Kategori Sampah', icon: Recycle },
   { id: 'penjualan-kas', label: 'Penjualan & Kas', icon: Wallet },
   { id: 'laporan', label: 'Laporan', icon: BarChart3 },
-  { id: 'panduan', label: 'Panduan & Modul', icon: BookOpen, section: 'Edukasi & Mitra' },
+  { id: 'panduan', label: 'Panduan & Modul', icon: BookOpen, section: 'Edukasi & Instansi' },
   { id: 'kampanye', label: 'Campaign', icon: Megaphone },
 ]
 
