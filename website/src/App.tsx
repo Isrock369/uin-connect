@@ -27,7 +27,7 @@ const pageTitles: Record<PageId, string> = {
   'penjualan-kas': 'Penjualan & Kas Pondok',
   laporan: 'Laporan',
   panduan: 'Panduan & Modul Edukasi',
-  kampanye: 'Kampanye Mitra',
+  kampanye: 'Campaign Pondok Pesantren',
 }
 
 const pageSubtitles: Record<PageId, string> = {
