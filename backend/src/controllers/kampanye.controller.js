@@ -51,4 +51,21 @@ async function remove(req, res) {
   res.json({ message: 'Kampanye berhasil dihapus.' })
 }
 
-module.exports = { getAll, create, update, remove }
+// Bungkus handler agar error database tidak mematikan server
+function safe(fn, pesan) {
+  return async (req, res) => {
+    try {
+      await fn(req, res)
+    } catch (err) {
+      console.error('[kampanye]', err.sqlMessage || err.message)
+      res.status(500).json({ message: pesan })
+    }
+  }
+}
+
+module.exports = {
+  getAll: safe(getAll, 'Gagal memuat kampanye.'),
+  create: safe(create, 'Gagal menyimpan kampanye.'),
+  update: safe(update, 'Gagal memperbarui kampanye.'),
+  remove: safe(remove, 'Gagal menghapus kampanye.'),
+}
