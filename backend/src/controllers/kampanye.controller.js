@@ -8,6 +8,7 @@ function mapRow(r) {
     judulKampanye: r.judul_kampanye,
     deskripsi: r.deskripsi,
     jenisSampah: typeof r.jenis_sampah === 'string' ? JSON.parse(r.jenis_sampah) : r.jenis_sampah,
+    minimalBerat: Number(r.minimal_berat) || 0,
     bonusKeterangan: r.bonus_keterangan,
     periodeMultai: r.periode_mulai,
     periodeSelesai: r.periode_selesai,
@@ -26,9 +27,9 @@ async function create(req, res) {
   const b = req.body
   const [result] = await pool.query(
     `INSERT INTO kampanye_mitra
-     (mitra, logo_emoji, judul_kampanye, deskripsi, jenis_sampah, bonus_keterangan, periode_mulai, periode_selesai, status, kontak, syarat)
-     VALUES (?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?, ?, ?)`,
-    [b.mitra, b.logoEmoji, b.judulKampanye, b.deskripsi, JSON.stringify(b.jenisSampah || []),
+     (mitra, logo_emoji, judul_kampanye, deskripsi, jenis_sampah, minimal_berat, bonus_keterangan, periode_mulai, periode_selesai, status, kontak, syarat)
+     VALUES (?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?, ?, ?, ?)`,
+    [b.mitra, b.logoEmoji || '🌿', b.judulKampanye, b.deskripsi, JSON.stringify(b.jenisSampah || []), Number(b.minimalBerat) || 0,
      b.bonusKeterangan, b.periodeMultai, b.periodeSelesai, b.status, b.kontak, b.syarat]
   )
   res.status(201).json({ id: result.insertId })
@@ -37,9 +38,9 @@ async function create(req, res) {
 async function update(req, res) {
   const b = req.body
   await pool.query(
-    `UPDATE kampanye_mitra SET mitra=?, logo_emoji=?, judul_kampanye=?, deskripsi=?, jenis_sampah=CAST(? AS JSON),
+    `UPDATE kampanye_mitra SET mitra=?, logo_emoji=?, judul_kampanye=?, deskripsi=?, jenis_sampah=CAST(? AS JSON), minimal_berat=?,
      bonus_keterangan=?, periode_mulai=?, periode_selesai=?, status=?, kontak=?, syarat=? WHERE id=?`,
-    [b.mitra, b.logoEmoji, b.judulKampanye, b.deskripsi, JSON.stringify(b.jenisSampah || []),
+    [b.mitra, b.logoEmoji || '🌿', b.judulKampanye, b.deskripsi, JSON.stringify(b.jenisSampah || []), Number(b.minimalBerat) || 0,
      b.bonusKeterangan, b.periodeMultai, b.periodeSelesai, b.status, b.kontak, b.syarat, req.params.id]
   )
   res.json({ message: 'Kampanye berhasil diperbarui.' })
