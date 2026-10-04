@@ -11,10 +11,7 @@ const statusConfig: Record<StatusKampanye, { label: string; bg: string; text: st
   selesai: { label: 'Selesai', bg: 'var(--color-muted)', text: 'var(--color-muted-foreground)', dot: '#9CA3AF' },
 }
 
-const jenisSampahOptions = [
-  'Plastik PET', 'Plastik Keras', 'Plastik Campuran',
-  'Kertas Kardus', 'Kertas Koran', 'Kaca', 'Logam', 'Kaleng Aluminium',
-]
+const jenisSampahOptions = ['Organik', 'Anorganik', 'Kertas', 'B3', 'Residu']
 
 interface KampanyeForm {
   mitra: string
@@ -22,6 +19,7 @@ interface KampanyeForm {
   judulKampanye: string
   deskripsi: string
   jenisSampah: string[]
+  minimalBerat: string
   bonusKeterangan: string
   periodeMultai: string
   periodeSelesai: string
@@ -32,10 +30,11 @@ interface KampanyeForm {
 
 const emptyForm: KampanyeForm = {
   mitra: '',
-  logoEmoji: '🏢',
+  logoEmoji: '🌿',
   judulKampanye: '',
   deskripsi: '',
   jenisSampah: [],
+  minimalBerat: '0',
   bonusKeterangan: '',
   periodeMultai: '',
   periodeSelesai: '',
@@ -49,8 +48,6 @@ const inputStyle: React.CSSProperties = {
   borderColor: 'var(--color-border)',
   color: 'var(--color-foreground)',
 }
-
-const logoOptions = ['🏢', '🏦', '🌿', '🧴', '📄', '🏛️', '🌍', '🔬', '💡', '🤝', '♻️', '🎯']
 
 export default function Kampanye() {
   const [kampanye, setKampanye] = useState<Kampanye[]>([])
@@ -91,6 +88,7 @@ export default function Kampanye() {
       judulKampanye: k.judulKampanye,
       deskripsi: k.deskripsi,
       jenisSampah: [...k.jenisSampah],
+      minimalBerat: String(k.minimalBerat ?? 0),
       bonusKeterangan: k.bonusKeterangan,
       periodeMultai: k.periodeMultai,
       periodeSelesai: k.periodeSelesai,
@@ -104,11 +102,12 @@ export default function Kampanye() {
   async function handleSave() {
     if (!form.mitra || !form.judulKampanye || !form.periodeMultai || !form.periodeSelesai) return
     setErrorMsg(null)
+    const payload = { ...form, minimalBerat: Math.max(0, Number(form.minimalBerat) || 0) }
     try {
       if (editTarget) {
-        await updateKampanye(editTarget.id, form)
+        await updateKampanye(editTarget.id, payload)
       } else {
-        await createKampanye(form)
+        await createKampanye(payload)
       }
       setShowModal(false)
       loadAll()
@@ -139,7 +138,7 @@ export default function Kampanye() {
   }
 
   if (loading) {
-    return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Memuat kampanye mitra...</p>
+    return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Memuat campaign...</p>
   }
 
   return (
@@ -150,11 +149,10 @@ export default function Kampanye() {
         </div>
       )}
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {[
           { label: 'Kampanye Aktif', value: aktif, sub: 'sedang berjalan', color: 'var(--color-success)' },
           { label: 'Akan Datang', value: mendatang, sub: 'segera dimulai', color: 'var(--color-warning)' },
-          { label: 'Total Mitra', value: new Set(kampanye.map((k) => k.mitra)).size, sub: 'terdaftar', color: 'var(--color-primary)' },
         ].map((stat) => (
           <div key={stat.label} className="rounded-2xl p-5 border border-[--color-border]" style={{ background: 'var(--color-card)' }}>
             <div className="text-2xl font-bold mb-1" style={{ fontFamily: 'var(--font-mono)', color: stat.color }}>
@@ -175,7 +173,7 @@ export default function Kampanye() {
           <Megaphone size={16} className="mt-0.5 shrink-0" style={{ color: 'var(--color-success)' }} />
           <div>
             <p className="text-sm font-semibold" style={{ color: 'var(--color-foreground)' }}>
-              {aktif} kampanye mitra sedang aktif!
+              {aktif} campaign sedang aktif!
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted-foreground)' }}>
               Informasikan ke santri agar dapat memanfaatkan bonus poin dan reward dari mitra.
@@ -283,6 +281,11 @@ export default function Kampanye() {
                     </span>
                   </div>
                   <div className="flex gap-1 flex-wrap justify-end">
+                    {k.minimalBerat > 0 && (
+                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: 'var(--color-accent-light)', color: 'var(--color-foreground)' }}>
+                        Min. {k.minimalBerat} kg
+                      </span>
+                    )}
                     {k.jenisSampah.slice(0, 2).map((j) => (
                       <span
                         key={j}
@@ -403,6 +406,15 @@ export default function Kampanye() {
                 </div>
               </div>
 
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wider mb-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Minimal Berat Setoran
+                </div>
+                <div className="text-sm" style={{ color: 'var(--color-foreground)' }}>
+                  {selected.minimalBerat > 0 ? `${selected.minimalBerat} kg` : 'Tanpa minimal'}
+                </div>
+              </div>
+
               {selected.syarat && (
                 <div className="rounded-xl p-4 border border-[--color-border]" style={{ background: 'var(--color-background)' }}>
                   <div className="flex items-center gap-1.5 mb-2">
@@ -456,7 +468,7 @@ export default function Kampanye() {
           <div className="w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[92vh]" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between px-6 py-5 border-b border-[--color-border] shrink-0">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
-                {editTarget ? 'Edit Kampanye' : 'Tambah Kampanye Mitra'}
+                {editTarget ? 'Edit Kampanye' : 'Tambah Kampanye'}
               </h3>
               <button onClick={() => setShowModal(false)}>
                 <X size={18} style={{ color: 'var(--color-muted-foreground)' }} />
@@ -464,28 +476,6 @@ export default function Kampanye() {
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              {/* Logo emoji */}
-              <div>
-                <label className="block text-xs font-semibold mb-2 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
-                  Logo Mitra
-                </label>
-                <div className="flex gap-2 flex-wrap">
-                  {logoOptions.map((ico) => (
-                    <button
-                      key={ico}
-                      onClick={() => setForm((f) => ({ ...f, logoEmoji: ico }))}
-                      className="w-9 h-9 rounded-lg text-lg flex items-center justify-center border-2 transition-all"
-                      style={{
-                        borderColor: form.logoEmoji === ico ? 'var(--color-primary)' : 'var(--color-border)',
-                        background: form.logoEmoji === ico ? 'var(--color-secondary)' : 'var(--color-background)',
-                      }}
-                    >
-                      {ico}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
@@ -512,7 +502,7 @@ export default function Kampanye() {
                   Judul Kampanye
                 </label>
                 <input type="text" value={form.judulKampanye} onChange={(e) => setForm((f) => ({ ...f, judulKampanye: e.target.value }))}
-                  placeholder="Bonus Poin 2× untuk Plastik PET…" className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none" style={inputStyle} />
+                  placeholder="Bonus Poin 2× untuk Anorganik…" className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none" style={inputStyle} />
               </div>
 
               <div>
@@ -529,7 +519,7 @@ export default function Kampanye() {
                   Keterangan Bonus / Reward
                 </label>
                 <input type="text" value={form.bonusKeterangan} onChange={(e) => setForm((f) => ({ ...f, bonusKeterangan: e.target.value }))}
-                  placeholder="2× poin untuk Plastik PET selama periode kampanye"
+                  placeholder="2× poin untuk Anorganik selama periode kampanye"
                   className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none" style={inputStyle} />
               </div>
 
@@ -553,6 +543,19 @@ export default function Kampanye() {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Minimal Berat Setoran (kg)
+                </label>
+                <input type="number" min="0" step="0.1" value={form.minimalBerat}
+                  onChange={(e) => setForm((f) => ({ ...f, minimalBerat: e.target.value }))}
+                  placeholder="0 = tanpa minimal"
+                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none" style={inputStyle} />
+                <p className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
+                  Berat minimum agar setoran memenuhi syarat campaign. Isi 0 jika tanpa minimal.
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
