@@ -176,7 +176,7 @@ export default function Kampanye() {
               {aktif} campaign sedang aktif!
             </p>
             <p className="text-xs mt-0.5" style={{ color: 'var(--color-muted-foreground)' }}>
-              Informasikan ke santri agar dapat memanfaatkan bonus poin dan reward dari mitra.
+              Informasikan ke santri agar dapat memanfaatkan bonus poin dan reward dari instansi.
             </p>
           </div>
         </div>
@@ -434,7 +434,7 @@ export default function Kampanye() {
                   <Phone size={13} className="mt-0.5 shrink-0" style={{ color: 'var(--color-primary)' }} />
                   <div>
                     <div className="text-xs font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'var(--color-muted-foreground)' }}>
-                      Kontak Mitra
+                      Kontak Instansi
                     </div>
                     <p className="text-sm" style={{ color: 'var(--color-foreground)' }}>{selected.kontak}</p>
                   </div>
@@ -479,10 +479,10 @@ export default function Kampanye() {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
-                    Nama Mitra
+                    Nama Instansi
                   </label>
                   <input type="text" value={form.mitra} onChange={(e) => setForm((f) => ({ ...f, mitra: e.target.value }))}
-                    placeholder="PT / Lembaga / Organisasi" className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none" style={inputStyle} />
+                    placeholder="Nama instansi / lembaga" className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none" style={inputStyle} />
                 </div>
                 <div>
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
@@ -577,10 +577,10 @@ export default function Kampanye() {
 
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
-                  Kontak Mitra
+                  Kontak Instansi
                 </label>
                 <input type="text" value={form.kontak} onChange={(e) => setForm((f) => ({ ...f, kontak: e.target.value }))}
-                  placeholder="email@mitra.com / 08xx-xxxx-xxxx"
+                  placeholder="email@instansi.com / 08xx-xxxx-xxxx"
                   className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none" style={inputStyle} />
               </div>
 
