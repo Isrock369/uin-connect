@@ -1,19 +1,22 @@
 import { useState, useEffect, useRef } from 'react'
-import { Scale, Wifi, CheckCircle2, ChevronLeft, RefreshCw, Send, Activity, AlertCircle } from 'lucide-react'
+import { Scale, Wifi, CheckCircle2, ChevronLeft, RefreshCw, Send, Activity, AlertCircle, Camera } from 'lucide-react'
 import logoSrc from './assets/logo.jpeg'
-import { getKamar, getTarifSampah, kirimSetoran } from './api/services'
+import { getKamar, getTarifSampah, kirimSetoran, kameraMintaFoto, kameraHasil } from './api/services'
 import { ApiError } from './api/client'
 import { bacaTimbangan, MODE_LANGSUNG, SUMBER_TIMBANGAN } from './api/timbangan'
 import type { Kamar, TarifSampah } from './types'
 
 type Step = 'kamar' | 'jenis' | 'sensor' | 'sukses'
 type SensorStatus = 'idle' | 'connecting' | 'measuring' | 'stable'
+// Foto bukti setoran dari ESP32-CAM: 'tidak' = kamera tidak aktif (setoran tetap sah)
+type FotoStatus = 'tidak' | 'menunggu' | 'ok' | 'gagal'
 
 // ── Pengaturan pembacaan timbangan asli (ESP32) ──
 const BERAT_MIN_KG = 0.01 // di bawah ini dianggap timbangan kosong
 const POLL_MS = 300 // seberapa sering web menanyakan berat ke timbangan
 const STABIL_BERTURUT = 2 // butuh 2x balasan "stabil" yang sama berturut-turut
 const MAKS_GAGAL = 3 // gagal 3x berturut-turut -> tampilkan pesan error
+const FOTO_TUNGGU_MS = 10000 // maksimal menunggu foto masuk setelah setoran dikirim
 
 const JENIS_CONFIG: Record<string, { emoji: string; color: string; bg: string; border: string }> = {
   Organik: { emoji: '🍃', color: '#15803D', bg: '#F0FDF4', border: '#86EFAC' },
@@ -46,6 +49,8 @@ export default function App() {
   const [successPoin, setSuccessPoin] = useState(0)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [fotoStatus, setFotoStatus] = useState<FotoStatus>('tidak')
+  const fotoTokenRef = useRef(0) // dinaikkan saat reset supaya proses tunggu foto yang lama berhenti
 
   function loadData() {
     setLoadingData(true)
@@ -159,6 +164,7 @@ export default function App() {
       const res = await kirimSetoran(selectedKamar.id, selectedJenis.id, finalWeight)
       setSuccessPoin(res.poin)
       setStep('sukses')
+      void ambilFotoBukti(res.id) // tidak ditunggu: setoran sudah tercatat, foto menyusul
     } catch (e) {
       setSubmitError(e instanceof ApiError ? e.message : 'Gagal mengirim setoran. Coba lagi.')
     } finally {
@@ -166,7 +172,36 @@ export default function App() {
     }
   }
 
+  // Meminta ESP32-CAM memotret setoran ini lalu menunggu sampai fotonya masuk.
+  // Kalau kamera tidak aktif atau gagal, setoran TETAP sah (foto hanya bukti tambahan).
+  async function ambilFotoBukti(setoranId: number) {
+    const token = ++fotoTokenRef.current
+    setFotoStatus('tidak')
+    try {
+      const r = await kameraMintaFoto(setoranId)
+      if (token !== fotoTokenRef.current || !r.kameraOnline) return
+    } catch {
+      return
+    }
+    setFotoStatus('menunggu')
+    const mulai = Date.now()
+    while (Date.now() - mulai < FOTO_TUNGGU_MS) {
+      await new Promise((r) => setTimeout(r, 700))
+      if (token !== fotoTokenRef.current) return
+      try {
+        const h = await kameraHasil(setoranId)
+        if (token !== fotoTokenRef.current) return
+        if (h.ada) { setFotoStatus('ok'); return }
+      } catch {
+        // abaikan, coba lagi sampai batas waktu
+      }
+    }
+    if (token === fotoTokenRef.current) setFotoStatus('gagal')
+  }
+
   function resetAll() {
+    fotoTokenRef.current++ // hentikan proses tunggu foto yang masih berjalan
+    setFotoStatus('tidak')
     setStep('kamar')
     setSelectedKamar(null)
     setSelectedJenis(null)
@@ -249,6 +284,27 @@ export default function App() {
             </div>
           ))}
         </div>
+
+        {fotoStatus !== 'tidak' && (
+          <div
+            className="w-full max-w-sm rounded-2xl border px-4 py-3 mb-6 flex items-center gap-3 text-left"
+            style={{
+              background: fotoStatus === 'gagal' ? 'var(--color-warning-bg)' : 'var(--color-card)',
+              borderColor: 'var(--color-border)',
+            }}
+          >
+            <Camera
+              size={20}
+              className={fotoStatus === 'menunggu' ? 'animate-pulse' : ''}
+              style={{ color: fotoStatus === 'ok' ? 'var(--color-success)' : fotoStatus === 'gagal' ? 'var(--color-warning)' : 'var(--color-primary)' }}
+            />
+            <p className="text-sm" style={{ color: 'var(--color-foreground)' }}>
+              {fotoStatus === 'menunggu' && 'Mengambil foto... jangan angkat sampah dulu.'}
+              {fotoStatus === 'ok' && 'Foto bukti tersimpan. Terima kasih!'}
+              {fotoStatus === 'gagal' && 'Foto belum masuk, tapi setoranmu tetap tercatat.'}
+            </p>
+          </div>
+        )}
 
         <div className="w-full max-w-sm">
           <button
