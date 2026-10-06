@@ -39,3 +39,18 @@ export function verifikasiSetoranEstimasi(jenis: string, beratKg: number) {
     body: { jenis, beratKg },
   })
 }
+
+// ---------- KAMERA (ESP32-CAM, foto bukti setoran) ----------
+export interface KameraMintaResponse {
+  kameraOnline: boolean // false = kamera tidak menyala/tidak tersambung, setoran tetap sah tanpa foto
+}
+
+// Meminta kamera memotret setoran yang baru dicatat.
+export function kameraMintaFoto(setoranId: number | string) {
+  return apiFetch<KameraMintaResponse>('/kamera/minta', { method: 'POST', body: { setoranId } })
+}
+
+// Menanyakan apakah foto untuk setoran ini sudah masuk ke server.
+export function kameraHasil(setoranId: number | string) {
+  return apiFetch<{ ada: boolean }>(`/kamera/hasil/${setoranId}`)
+}
