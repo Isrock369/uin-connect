@@ -52,3 +52,18 @@ export async function apiFetch<T>(
 
   return data as T
 }
+
+// Mengambil file biner (mis. foto) dari endpoint yang butuh login.
+// <img src> tidak bisa mengirim token, jadi gambar diambil lewat fetch lalu dibuat URL sementara.
+export async function apiFetchBlob(path: string): Promise<Blob> {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) headers.Authorization = `Bearer ${token}`
+
+  const res = await fetch(`${API_URL}${path}`, { headers })
+  if (!res.ok) {
+    if (res.status === 401) clearToken()
+    throw new ApiError(res.status === 404 ? 'Foto tidak ada.' : 'Gagal memuat foto.', res.status)
+  }
+  return res.blob()
+}

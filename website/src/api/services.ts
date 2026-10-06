@@ -1,7 +1,7 @@
 // Kumpulan fungsi pemanggil setiap endpoint backend.
 // Setiap halaman (pages/*) cukup import fungsi dari sini — tidak perlu
 // tahu detail fetch/URL/token sama sekali.
-import { apiFetch } from './client'
+import { apiFetch, apiFetchBlob } from './client'
 import type {
   Kamar, Setoran, StatusSetoran, BarangKatalog, Penukaran,
   PenjualanOrganik, TransaksiKas, TarifSampah, Modul, Kampanye,
@@ -79,6 +79,13 @@ export interface SetoranEditData {
 }
 export function updateSetoran(id: string, data: SetoranEditData) {
   return apiFetch<{ message: string }>(`/setoran/${id}`, { method: 'PUT', body: data })
+}
+// Foto bukti setoran dari ESP32-CAM
+export function getFotoSetoranIds() {
+  return apiFetch<{ ids: number[] }>('/kamera/foto-ada')
+}
+export function getFotoSetoran(id: string) {
+  return apiFetchBlob(`/kamera/foto/${id}`)
 }
 export function deleteSetoran(id: string) {
   return apiFetch<{ message: string }>(`/setoran/${id}`, { method: 'DELETE' })
