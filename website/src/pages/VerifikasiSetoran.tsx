@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Check, X, AlertCircle, Filter, Plus, Pencil, Trash2 } from 'lucide-react'
+import { Check, X, AlertCircle, Filter, Plus, Pencil, Trash2, Camera } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
-import { getSetoran, getKamar, getTarifSampah, verifikasiSetoran, updateSetoran, deleteSetoran } from '../api/services'
+import { getSetoran, getKamar, getTarifSampah, verifikasiSetoran, updateSetoran, deleteSetoran, getFotoSetoranIds, getFotoSetoran } from '../api/services'
 import { ApiError } from '../api/client'
 import type { Setoran, StatusSetoran, Kamar, TarifSampah } from '../types'
 
@@ -75,11 +75,24 @@ export default function VerifikasiSetoran() {
   const [editSubmitting, setEditSubmitting] = useState(false)
   const [deleteTarget, setDeleteTarget] = useState<Setoran | null>(null)
   const [deleteSubmitting, setDeleteSubmitting] = useState(false)
+  const [fotoIds, setFotoIds] = useState<Set<string>>(new Set())
+  const [fotoTarget, setFotoTarget] = useState<Setoran | null>(null)
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null)
+  const [fotoLoading, setFotoLoading] = useState(false)
+  const [fotoError, setFotoError] = useState<string | null>(null)
 
   function loadAll() {
     setLoading(true)
-    Promise.all([getSetoran(), getKamar(), getTarifSampah()])
-      .then(([s, k, t]) => { setSetoran(s); setKamarData(k); setTarifSampah(t) })
+    Promise.all([
+      getSetoran(),
+      getKamar(),
+      getTarifSampah(),
+      getFotoSetoranIds().catch(() => ({ ids: [] as number[] })), // foto bersifat tambahan, jangan sampai merusak halaman
+    ])
+      .then(([s, k, t, f]) => {
+        setSetoran(s); setKamarData(k); setTarifSampah(t)
+        setFotoIds(new Set(f.ids.map(String)))
+      })
       .catch((e) => setErrorMsg(e instanceof ApiError ? e.message : 'Gagal memuat data.'))
       .finally(() => setLoading(false))
   }
@@ -98,6 +111,24 @@ export default function VerifikasiSetoran() {
 
   const selectedTarif = tarifSampah.find((t) => t.id === form.tarifSampahId)
   const estimasiPoin = selectedTarif && form.berat > 0 ? Math.round(selectedTarif.poinPerKg * form.berat) : 0
+
+  function openFoto(s: Setoran) {
+    setFotoTarget(s)
+    setFotoUrl(null)
+    setFotoError(null)
+    setFotoLoading(true)
+    getFotoSetoran(s.id)
+      .then((blob) => setFotoUrl(URL.createObjectURL(blob)))
+      .catch((e) => setFotoError(e instanceof ApiError ? e.message : 'Gagal memuat foto.'))
+      .finally(() => setFotoLoading(false))
+  }
+
+  function closeFoto() {
+    if (fotoUrl) URL.revokeObjectURL(fotoUrl)
+    setFotoTarget(null)
+    setFotoUrl(null)
+    setFotoError(null)
+  }
 
   async function approve(id: string) {
     setBusyId(id)
@@ -320,6 +351,16 @@ export default function VerifikasiSetoran() {
                           </button>
                         </>
                       )}
+                      {fotoIds.has(String(s.id)) && (
+                        <button
+                          onClick={() => openFoto(s)}
+                          title="Lihat foto bukti"
+                          className="w-7 h-7 flex items-center justify-center rounded-lg transition-all hover:opacity-70"
+                          style={{ background: 'var(--color-secondary)' }}
+                        >
+                          <Camera size={12} style={{ color: 'var(--color-primary)' }} />
+                        </button>
+                      )}
                       <button
                         onClick={() => openEdit(s)}
                         title="Edit setoran"
@@ -344,6 +385,42 @@ export default function VerifikasiSetoran() {
           </table>
         </div>
       </div>
+
+      {fotoTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(26,18,8,0.6)' }}
+          onClick={closeFoto}
+        >
+          <div
+            className="w-full max-w-xl rounded-2xl p-5 shadow-xl"
+            style={{ background: 'var(--color-card)' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
+                  Foto Bukti Setoran
+                </h3>
+                <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                  {fotoTarget.kamarNama} · {fotoTarget.jenisSampah} · {fotoTarget.berat} kg · {formatTanggal(fotoTarget.tanggal)}
+                </p>
+              </div>
+              <button onClick={closeFoto} className="p-1 hover:opacity-60 transition-opacity" aria-label="Tutup">
+                <X size={18} style={{ color: 'var(--color-muted-foreground)' }} />
+              </button>
+            </div>
+            <div
+              className="w-full rounded-xl overflow-hidden flex items-center justify-center"
+              style={{ background: 'var(--color-muted)', minHeight: 200 }}
+            >
+              {fotoLoading && <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Memuat foto…</p>}
+              {fotoError && <p className="text-sm" style={{ color: 'var(--color-error)' }}>{fotoError}</p>}
+              {fotoUrl && <img src={fotoUrl} alt="Foto bukti setoran" className="w-full h-auto block" />}
+            </div>
+          </div>
+        </div>
+      )}
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
