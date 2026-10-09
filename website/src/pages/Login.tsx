@@ -42,7 +42,7 @@ export default function Login() {
             Login Pengurus
           </h1>
           <p className="text-xs text-center mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-            Bank Sampah Pesantren — Website Admin
+            MIU Connect — Website Admin
           </p>
         </div>
 
