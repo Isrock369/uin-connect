@@ -31,7 +31,7 @@ const pageTitles: Record<PageId, string> = {
 }
 
 const pageSubtitles: Record<PageId, string> = {
-  ringkasan: 'Ikhtisar aktivitas bank sampah',
+  ringkasan: 'Ikhtisar aktivitas MIU Connect',
   verifikasi: 'Tinjau dan setujui setoran sampah dari kamar (dikirim dari Portal Santri)',
   'poin-kamar': 'Kelola saldo poin dan penukaran barang',
   katalog: 'Manajemen stok barang yang bisa ditukar',
