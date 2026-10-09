@@ -1,4 +1,4 @@
-# Bank Sampah Pesantren — Full Stack
+# MIU Connect — Full Stack
 
 Proyek ini terdiri dari **3 bagian terpisah** yang saling terhubung lewat 1 backend:
 
