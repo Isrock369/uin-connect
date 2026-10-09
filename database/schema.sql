@@ -1,5 +1,5 @@
 -- =====================================================================
--- SKEMA DATABASE - BANK SAMPAH PESANTREN
+-- SKEMA DATABASE - MIU CONNECT
 -- =====================================================================
 -- Cara pakai:
 --   mysql -u root -p < schema.sql
@@ -254,7 +254,7 @@ INSERT INTO penjualan_organik (tanggal, pembeli, produk, jumlah_kg, harga_per_kg
 INSERT INTO transaksi_kas (tanggal, keterangan, jenis, jumlah, penjualan_organik_id) VALUES
 ('2026-09-01', 'Saldo awal September', 'masuk', 1100000, NULL),
 ('2026-09-03', 'Penjualan kompos — Pak Slamet Widodo', 'masuk', 60000, 1),
-('2026-09-05', 'Biaya operasional bank sampah (karung, sarung tangan)', 'keluar', 50000, NULL),
+('2026-09-05', 'Biaya operasional MIU Connect (karung, sarung tangan)', 'keluar', 50000, NULL),
 ('2026-09-07', 'Penjualan pakan maggot — Bu Ani Rahayu', 'masuk', 75000, 2),
 ('2026-09-10', 'Penjualan kompos — Pak Budi Santoso', 'masuk', 90000, 3),
 ('2026-09-10', 'Pembelian karung goni baru (10 pcs)', 'keluar', 75000, NULL),
@@ -264,16 +264,16 @@ INSERT INTO transaksi_kas (tanggal, keterangan, jenis, jumlah, penjualan_organik
 
 INSERT INTO modul_edukasi (judul, kategori, deskripsi, konten, durasi_menit, status, icon, tanggal_dibuat) VALUES
 ('Cara Memilah Sampah Organik & Anorganik', 'Cara Pilah',
- 'Panduan dasar memisahkan sampah organik dan anorganik sebelum dibuang agar proses bank sampah berjalan lancar.',
+ 'Panduan dasar memisahkan sampah organik dan anorganik sebelum dibuang agar proses MIU Connect berjalan lancar.',
  'Apa itu sampah organik? Sampah yang berasal dari makhluk hidup dan dapat terurai alami. Apa itu sampah anorganik? Sampah yang tidak terurai dalam waktu singkat.',
  5, 'published', '♻️', '2026-08-01'),
-('Jadwal & Tata Tertib Bank Sampah', 'Cara Setor',
+('Jadwal & Tata Tertib MIU Connect', 'Cara Setor',
  'Aturan operasional, jadwal buka, dan tata tertib yang wajib dipatuhi oleh setiap kamar saat menyetor sampah.',
  'Jadwal operasional: Senin 06.30-07.30 Asrama A&B, Rabu 06.30-07.30 Asrama C&D, Sabtu 08.00-10.00 semua asrama.',
  3, 'draft', '📋', '2026-09-01');
 
 INSERT INTO kampanye_mitra (mitra, logo_emoji, judul_kampanye, deskripsi, jenis_sampah, bonus_keterangan, periode_mulai, periode_selesai, status, kontak, syarat) VALUES
-('Bank Sampah Nusantara', '🏦', 'Bonus Poin 2x untuk Plastik PET',
+('MIU Connect Nusantara', '🏦', 'Bonus Poin 2x untuk Plastik PET',
  'Dalam rangka mendorong pengumpulan plastik PET berkualitas, kami memberikan bonus poin 2x lipat untuk setiap setoran plastik PET selama bulan September 2026.',
  JSON_ARRAY('Anorganik'), '2x poin untuk Anorganik (400 pt/kg, berlaku sebulan)',
  '2026-09-01', '2026-09-30', 'aktif', 'banksampah.nusantara@gmail.com / 0812-3456-7890',
