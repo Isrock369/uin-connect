@@ -1,7 +1,7 @@
 {
-  "name": "bank-sampah-backend",
+  "name": "miu-connect-backend",
   "version": "1.0.0",
-  "description": "Backend API (Node.js + Express + MySQL) untuk sistem Bank Sampah Pesantren",
+  "description": "Backend API (Node.js + Express + MySQL) untuk sistem MIU Connect",
   "main": "src/server.js",
   "type": "commonjs",
   "scripts": {
