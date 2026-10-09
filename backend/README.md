@@ -1,4 +1,4 @@
-# Backend — Bank Sampah Pesantren
+# Backend — MIU Connect
 
 Node.js + Express + MySQL (mysql2). Menyediakan REST API untuk 2 frontend:
 - **website/** → dashboard pengurus (perlu login)
