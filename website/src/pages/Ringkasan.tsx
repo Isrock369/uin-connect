@@ -102,7 +102,7 @@ export default function Ringkasan() {
           Selamat datang, {user?.nama || 'Pengurus'} 👋
         </h2>
         <p className="text-sm text-[--color-muted-foreground] mt-0.5">
-          {new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())} · Bank Sampah Pesantren
+          {new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())} · MIU Connect
         </p>
       </div>
 
