@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "type": "module",
-  "description": "Website Admin/Pengurus Bank Sampah Pesantren (React + Vite + TypeScript) — perlu login",
+  "description": "Website Admin/Pengurus MIU Connect (React + Vite + TypeScript) — perlu login",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
