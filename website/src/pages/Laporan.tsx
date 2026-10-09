@@ -145,7 +145,7 @@ export default function Laporan() {
       </div>
 
       <h2 className="hidden print:block text-lg font-semibold" style={{ color: 'var(--color-foreground)' }}>
-        Laporan Bank Sampah — {period === 'minggu' ? 'Minggu Ini' : 'Bulan Ini'}
+        Laporan MIU Connect — {period === 'minggu' ? 'Minggu Ini' : 'Bulan Ini'}
       </h2>
 
       <div className="no-print flex gap-2 border-b border-[--color-border]">
