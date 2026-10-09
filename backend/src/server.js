@@ -74,7 +74,7 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 4000
 app.listen(PORT, () => {
-  console.log(`🚀 Backend Bank Sampah Pesantren jalan di http://localhost:${PORT}`)
+  console.log(`🚀 Backend MIU Connect jalan di http://localhost:${PORT}`)
   testConnection()
   pastikanTabelFoto().catch((e) => console.warn('Tabel foto belum siap:', e.message))
 })
