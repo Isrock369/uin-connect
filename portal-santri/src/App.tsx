@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef } from 'react'
-import { Scale, Wifi, CheckCircle2, ChevronLeft, RefreshCw, Send, Activity, AlertCircle, Camera } from 'lucide-react'
+import { Scale, Wifi, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Send, Activity, AlertCircle, Camera, Trophy } from 'lucide-react'
 import logoSrc from './assets/logo.jpeg'
-import { getKamar, getTarifSampah, kirimSetoran, kameraMintaFoto, kameraHasil } from './api/services'
+import { getKamar, getTarifSampah, getRiwayatKamar, kirimSetoran, kameraMintaFoto, kameraHasil } from './api/services'
 import { ApiError } from './api/client'
 import { bacaTimbangan, MODE_LANGSUNG, SUMBER_TIMBANGAN } from './api/timbangan'
-import type { Kamar, TarifSampah } from './types'
+import type { Kamar, TarifSampah, RiwayatKamar } from './types'
 
-type Step = 'kamar' | 'jenis' | 'sensor' | 'sukses'
+type Step = 'kamar' | 'jenis' | 'sensor' | 'sukses' | 'poin' | 'riwayat'
 type SensorStatus = 'idle' | 'connecting' | 'measuring' | 'stable'
 // Foto bukti setoran dari ESP32-CAM: 'tidak' = kamera tidak aktif (setoran tetap sah)
 type FotoStatus = 'tidak' | 'menunggu' | 'ok' | 'gagal'
@@ -27,7 +27,22 @@ const JENIS_CONFIG: Record<string, { emoji: string; color: string; bg: string; b
 }
 
 const STEPS: Step[] = ['kamar', 'jenis', 'sensor']
-const STEP_LABEL: Record<Step, string> = { kamar: 'Kamar', jenis: 'Sampah', sensor: 'Timbang', sukses: '' }
+const STEP_LABEL: Record<Step, string> = { kamar: 'Kamar', jenis: 'Sampah', sensor: 'Timbang', sukses: '', poin: '', riwayat: '' }
+
+const MEDALI = ['🥇', '🥈', '🥉']
+
+const STATUS_SETORAN: Record<string, { label: string; color: string; bg: string }> = {
+  disetujui: { label: 'Disetujui', color: 'var(--color-success)', bg: 'var(--color-success-bg)' },
+  menunggu: { label: 'Menunggu', color: 'var(--color-warning)', bg: 'var(--color-warning-bg)' },
+  ditolak: { label: 'Ditolak', color: 'var(--color-error)', bg: 'var(--color-error-bg)' },
+}
+
+// 'YYYY-MM-DD' -> '12 Okt 2026' (dibaca manual supaya tidak geser hari karena zona waktu)
+function formatTanggal(s: string) {
+  const [y, m, d] = s.split('-').map(Number)
+  if (!y || !m || !d) return s
+  return new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(y, m - 1, d))
+}
 
 export default function App() {
   // ── Data dari backend (publik, tanpa login) ──
@@ -51,6 +66,30 @@ export default function App() {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [fotoStatus, setFotoStatus] = useState<FotoStatus>('tidak')
   const fotoTokenRef = useRef(0) // dinaikkan saat reset supaya proses tunggu foto yang lama berhenti
+
+  // ── Cek poin & riwayat kamar ──
+  const [riwayatKamar, setRiwayatKamar] = useState<Kamar | null>(null)
+  const [riwayatData, setRiwayatData] = useState<RiwayatKamar | null>(null)
+  const [riwayatLoading, setRiwayatLoading] = useState(false)
+  const [riwayatError, setRiwayatError] = useState<string | null>(null)
+
+  function bukaKlasemen() {
+    setStep('poin')
+    // refresh diam-diam supaya poin yang tampil terbaru (tanpa layar loading penuh)
+    getKamar().then(setAllKamar).catch(() => {})
+  }
+
+  function bukaRiwayat(k: Kamar) {
+    setRiwayatKamar(k)
+    setRiwayatData(null)
+    setRiwayatError(null)
+    setRiwayatLoading(true)
+    setStep('riwayat')
+    getRiwayatKamar(k.id)
+      .then(setRiwayatData)
+      .catch((e) => setRiwayatError(e instanceof ApiError ? e.message : 'Tidak bisa memuat riwayat. Periksa koneksi.'))
+      .finally(() => setRiwayatLoading(false))
+  }
 
   function loadData() {
     setLoadingData(true)
@@ -346,7 +385,7 @@ export default function App() {
       </header>
 
       {/* Step indicator */}
-      <div className="shrink-0 px-4 pt-4 pb-2">
+      <div className={`shrink-0 px-4 pt-4 pb-2 ${stepIndex < 0 ? 'hidden' : ''}`}>
         <div className="flex items-center justify-center gap-1">
           {STEPS.map((s, i) => {
             const done = stepIndex > i
@@ -394,6 +433,20 @@ export default function App() {
             <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
               Pilih kamar yang akan menyetor sampah
             </p>
+            <button
+              onClick={bukaKlasemen}
+              className="w-full mb-4 rounded-2xl border-2 px-4 py-3.5 flex items-center gap-3 text-left transition-all active:scale-[0.99]"
+              style={{ borderColor: 'var(--color-accent)', background: 'var(--color-accent-light)' }}
+            >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: 'var(--color-accent)' }}>
+                <Trophy size={20} color="white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="font-bold text-sm" style={{ color: 'var(--color-foreground)' }}>Cek Poin &amp; Klasemen Kamar</div>
+                <div className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>Lihat peringkat dan riwayat setoran tiap kamar</div>
+              </div>
+              <ChevronRight size={18} style={{ color: 'var(--color-muted-foreground)' }} className="shrink-0" />
+            </button>
             {allKamar.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada kamar terdaftar.</p>
             ) : (
@@ -419,6 +472,153 @@ export default function App() {
                 ))}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── Cek Poin: klasemen semua kamar ── */}
+        {step === 'poin' && (
+          <div>
+            <button
+              onClick={() => setStep('kamar')}
+              className="flex items-center gap-1 text-sm mb-3 py-2"
+              style={{ color: 'var(--color-muted-foreground)' }}
+            >
+              <ChevronLeft size={13} /> Kembali
+            </button>
+            <h2 className="text-xl font-bold mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
+              Klasemen Kamar
+            </h2>
+            <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
+              Berdasarkan total poin · ketuk kamar untuk lihat riwayat setoran
+            </p>
+            {allKamar.length === 0 ? (
+              <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada kamar terdaftar.</p>
+            ) : (
+              <div className="space-y-2.5">
+                {[...allKamar].sort((a, b) => b.poin - a.poin).map((k, _i, arr) => {
+                  const rank = arr.filter((x) => x.poin > k.poin).length + 1
+                  const maxPoin = arr[0]?.poin || 0
+                  const pct = maxPoin > 0 ? Math.max(4, (k.poin / maxPoin) * 100) : 0
+                  return (
+                    <button
+                      key={k.id}
+                      onClick={() => bukaRiwayat(k)}
+                      className="w-full rounded-2xl border p-3.5 flex items-center gap-3 text-left transition-all active:scale-[0.99]"
+                      style={{ borderColor: 'var(--color-border)', background: 'var(--color-card)' }}
+                    >
+                      <span className="w-8 text-center text-lg font-bold shrink-0" style={{ color: 'var(--color-muted-foreground)' }}>
+                        {rank <= 3 ? MEDALI[rank - 1] : rank}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="font-semibold text-sm truncate" style={{ color: 'var(--color-foreground)' }}>{k.nama}</span>
+                          <span className="text-sm font-bold shrink-0" style={{ color: 'var(--color-primary)' }}>
+                            {k.poin.toLocaleString('id-ID')} pt
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full overflow-hidden my-1.5" style={{ background: 'var(--color-muted)' }}>
+                          <div
+                            className="h-full rounded-full"
+                            style={{ width: `${pct}%`, background: rank === 1 ? 'var(--color-accent)' : 'var(--color-primary)', opacity: rank === 1 ? 1 : 0.65 }}
+                          />
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>{k.asrama}</div>
+                      </div>
+                      <ChevronRight size={16} style={{ color: 'var(--color-muted-foreground)' }} className="shrink-0" />
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── Riwayat setoran satu kamar ── */}
+        {step === 'riwayat' && riwayatKamar && (
+          <div>
+            <button
+              onClick={() => setStep('poin')}
+              className="flex items-center gap-1 text-sm mb-3 py-2"
+              style={{ color: 'var(--color-muted-foreground)' }}
+            >
+              <ChevronLeft size={13} /> Klasemen
+            </button>
+
+            <div className="rounded-2xl p-5 mb-4" style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}>
+              <div className="text-sm opacity-80">{riwayatKamar.asrama}</div>
+              <div className="text-lg font-bold leading-tight mb-3">{riwayatKamar.nama}</div>
+              <div className="text-3xl font-bold leading-none">
+                {(allKamar.find((k) => k.id === riwayatKamar.id)?.poin ?? riwayatKamar.poin).toLocaleString('id-ID')}
+                <span className="text-base font-semibold opacity-80"> poin</span>
+              </div>
+              {riwayatData && riwayatData.poinMenunggu > 0 && (
+                <div className="mt-3 text-xs px-3 py-1.5 rounded-full inline-block" style={{ background: 'rgba(255,255,255,0.18)' }}>
+                  +{riwayatData.poinMenunggu.toLocaleString('id-ID')} poin menunggu verifikasi
+                </div>
+              )}
+            </div>
+
+            <h3 className="text-sm font-bold mb-2" style={{ color: 'var(--color-foreground)' }}>Riwayat Setoran</h3>
+
+            {riwayatLoading && (
+              <p className="text-sm py-6 text-center" style={{ color: 'var(--color-muted-foreground)' }}>Memuat riwayat...</p>
+            )}
+
+            {riwayatError && (
+              <div className="rounded-xl p-3 text-sm mb-3" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
+                {riwayatError}
+                <button onClick={() => bukaRiwayat(riwayatKamar)} className="block mt-2 font-semibold underline">Coba lagi</button>
+              </div>
+            )}
+
+            {riwayatData && riwayatData.riwayat.length === 0 && (
+              <p className="text-sm py-6 text-center" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada setoran dari kamar ini.</p>
+            )}
+
+            {riwayatData && riwayatData.riwayat.length > 0 && (
+              <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--color-border)', background: 'var(--color-card)' }}>
+                {riwayatData.riwayat.map((r) => {
+                  const st = STATUS_SETORAN[r.status] ?? STATUS_SETORAN.menunggu
+                  const cfg = JENIS_CONFIG[r.jenisSampah] ?? JENIS_CONFIG.Residu
+                  return (
+                    <div key={r.id} className="px-4 py-3 flex items-center gap-3 border-b last:border-0" style={{ borderColor: 'var(--color-border)' }}>
+                      <div className="text-xl shrink-0">{cfg.emoji}</div>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold truncate" style={{ color: 'var(--color-foreground)' }}>{r.jenisSampah}</div>
+                        <div className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                          {formatTanggal(r.tanggal)} · {r.berat.toLocaleString('id-ID')} kg
+                        </div>
+                        {r.catatan && (
+                          <div className="text-xs mt-0.5" style={{ color: 'var(--color-error)' }}>Catatan: {r.catatan}</div>
+                        )}
+                      </div>
+                      <div className="text-right shrink-0">
+                        <div
+                          className="text-sm font-bold"
+                          style={{ color: r.status === 'ditolak' ? 'var(--color-muted-foreground)' : 'var(--color-primary)', textDecoration: r.status === 'ditolak' ? 'line-through' : 'none' }}
+                        >
+                          {r.poin > 0 ? `+${r.poin}` : '0'} pt
+                        </div>
+                        <span className="inline-block text-[11px] font-semibold px-2 py-0.5 rounded-full mt-0.5" style={{ background: st.bg, color: st.color }}>
+                          {st.label}
+                        </span>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+            {riwayatData && riwayatData.riwayat.length >= 30 && (
+              <p className="text-xs text-center mt-2" style={{ color: 'var(--color-muted-foreground)' }}>Menampilkan 30 setoran terakhir.</p>
+            )}
+
+            <button
+              onClick={() => { setSelectedKamar(riwayatKamar); setStep('jenis') }}
+              className="w-full mt-5 py-3.5 rounded-2xl text-base font-bold"
+              style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
+            >
+              Setor Sampah untuk Kamar Ini
+            </button>
           </div>
         )}
 

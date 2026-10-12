@@ -14,3 +14,18 @@ export interface TarifSampah {
   poinPerKg: number
   keterangan: string
 }
+
+export interface RiwayatSetoran {
+  id: number
+  tanggal: string // YYYY-MM-DD
+  jenisSampah: string
+  berat: number
+  poin: number
+  status: 'menunggu' | 'disetujui' | 'ditolak'
+  catatan: string | null
+}
+
+export interface RiwayatKamar {
+  poinMenunggu: number
+  riwayat: RiwayatSetoran[]
+}
