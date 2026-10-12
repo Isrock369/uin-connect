@@ -47,22 +47,26 @@ body {
   margin: 0;
 }
 
+/* Scrollbar jelas terlihat di laptop (sebelumnya 4px & hampir transparan) */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-muted-foreground) 55%, transparent);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted-foreground);
+  background-clip: padding-box;
 }
 /* ---------- SMOOTH & RESPONSIF (HP / iPad / laptop) ---------- */
 html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
