@@ -230,14 +230,14 @@ export default function PoinKamar() {
       </div>
 
       {/* ── Table header ── */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h3
           className="text-base font-semibold"
           style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}
         >
           Daftar Kamar
         </h3>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => { setShowManageAsrama(true); setManageAsramaError(null) }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity border"
@@ -466,7 +466,7 @@ export default function PoinKamar() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(26,18,8,0.5)' }}
         >
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3
                 className="text-lg font-semibold"
@@ -606,7 +606,7 @@ export default function PoinKamar() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(26,18,8,0.5)' }}
         >
-          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div
               className="w-12 h-12 rounded-full mb-4 flex items-center justify-center mx-auto"
               style={{ background: 'var(--color-error-bg)' }}
@@ -648,7 +648,7 @@ export default function PoinKamar() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(26,18,8,0.5)' }}
         >
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl max-h-[85vh] overflow-y-auto" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl max-h-[85vh] overflow-y-auto" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Kelola Asrama
@@ -750,7 +750,7 @@ export default function PoinKamar() {
           className="fixed inset-0 z-50 flex items-center justify-center p-4"
           style={{ background: 'rgba(26,18,8,0.5)' }}
         >
-          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div
               className="w-12 h-12 rounded-full mb-4 flex items-center justify-center mx-auto"
               style={{ background: 'var(--color-error-bg)' }}
@@ -793,7 +793,7 @@ export default function PoinKamar() {
           style={{ background: 'rgba(26,18,8,0.5)' }}
         >
           <div
-            className="w-full max-w-lg rounded-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto"
+            className="w-full max-w-lg rounded-2xl p-4 sm:p-6 shadow-xl max-h-[90vh] overflow-y-auto"
             style={{ background: 'var(--color-card)' }}
           >
             <div className="flex items-start justify-between mb-1">

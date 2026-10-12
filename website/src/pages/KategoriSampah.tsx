@@ -232,7 +232,7 @@ export default function KategoriSampah() {
         </div>
       )}
 
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap">
           {kategoriList.map((k) => (
             <button
@@ -370,7 +370,7 @@ export default function KategoriSampah() {
 
       {showKelolaKategori && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Kelola Kategori
@@ -489,7 +489,7 @@ export default function KategoriSampah() {
 
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 {editTarget ? 'Edit Jenis Sampah' : 'Tambah Jenis Sampah Baru'}

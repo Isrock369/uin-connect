@@ -30,7 +30,7 @@ export default function Login() {
       style={{ background: 'var(--color-background)' }}
     >
       <div
-        className="w-full max-w-sm rounded-3xl border p-8"
+        className="w-full max-w-sm rounded-3xl border p-6 sm:p-8"
         style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
       >
         <div className="flex flex-col items-center mb-6">

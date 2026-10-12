@@ -381,7 +381,7 @@ export default function Kampanye() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <div className="text-xs font-semibold uppercase tracking-wider mb-2" style={{ color: 'var(--color-muted-foreground)' }}>
                     Periode
@@ -475,7 +475,7 @@ export default function Kampanye() {
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto flex-1">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
                     Nama Instansi
@@ -562,7 +562,7 @@ export default function Kampanye() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
                     Periode Mulai
@@ -620,7 +620,7 @@ export default function Kampanye() {
       {/* ── Modal: Hapus ── */}
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="w-12 h-12 rounded-full mb-4 flex items-center justify-center mx-auto" style={{ background: 'var(--color-error-bg)' }}>
               <Trash2 size={22} style={{ color: 'var(--color-error)' }} />
             </div>

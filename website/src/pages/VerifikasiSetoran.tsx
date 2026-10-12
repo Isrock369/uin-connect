@@ -424,7 +424,7 @@ export default function VerifikasiSetoran() {
 
       {showAddModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-lg rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-lg rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Catat Setoran Sampah
@@ -439,7 +439,7 @@ export default function VerifikasiSetoran() {
             </p>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InputField label="Kamar">
                   <select
                     value={form.kamarId}
@@ -527,7 +527,7 @@ export default function VerifikasiSetoran() {
 
       {rejectTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <h3 className="text-lg font-semibold mb-1" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
               Tolak Setoran
             </h3>
@@ -565,7 +565,7 @@ export default function VerifikasiSetoran() {
 
       {editTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-lg rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-lg rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-1">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Edit Setoran
@@ -581,7 +581,7 @@ export default function VerifikasiSetoran() {
             </p>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <InputField label="Kamar">
                   <select
                     value={editForm.kamarId}
@@ -669,7 +669,7 @@ export default function VerifikasiSetoran() {
 
       {deleteTarget && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-sm rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-sm rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="w-12 h-12 rounded-full mb-4 flex items-center justify-center mx-auto" style={{ background: 'var(--color-error-bg)' }}>
               <Trash2 size={22} style={{ color: 'var(--color-error)' }} />
             </div>

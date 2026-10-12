@@ -303,7 +303,7 @@ export default function PenjualanKas() {
 
       {showPenjualanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Catat Penjualan Organik
@@ -339,7 +339,7 @@ export default function PenjualanKas() {
                   {produkOrganik.map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>Jumlah (kg)</label>
                   <input type="number" value={penjualanForm.jumlah || ''} onChange={(e) => setPenjualanForm((f) => ({ ...f, jumlah: Number(e.target.value) }))}
@@ -377,7 +377,7 @@ export default function PenjualanKas() {
 
       {showKasModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-md rounded-2xl p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Catat Transaksi Kas
