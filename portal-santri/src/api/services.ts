@@ -1,8 +1,12 @@
 import { apiFetch } from './client'
-import type { Kamar, TarifSampah } from '../types'
+import type { Kamar, TarifSampah, RiwayatKamar } from '../types'
 
 export function getKamar() {
   return apiFetch<Kamar[]>('/kamar')
+}
+
+export function getRiwayatKamar(kamarId: string | number) {
+  return apiFetch<RiwayatKamar>(`/kamar/${kamarId}/riwayat`)
 }
 
 export function getTarifSampah() {
