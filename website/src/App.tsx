@@ -121,8 +121,7 @@ function AdminShell() {
           >
             <Menu size={18} style={{ color: 'var(--color-foreground)' }} />
           </button>
-          // SESUDAH
-<button
+          <button
   onClick={() => navigate('ringkasan')}
   aria-label="Ke Dashboard"
   className="flex items-center gap-2 transition-opacity active:opacity-70"
