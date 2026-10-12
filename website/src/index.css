@@ -47,22 +47,26 @@ body {
   margin: 0;
 }
 
+/* Scrollbar jelas terlihat di laptop (sebelumnya 4px & hampir transparan) */
 ::-webkit-scrollbar {
-  width: 4px;
-  height: 4px;
+  width: 12px;
+  height: 12px;
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: rgba(0, 0, 0, 0.04);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--color-border);
-  border-radius: 2px;
+  background: color-mix(in srgb, var(--color-muted-foreground) 55%, transparent);
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-muted-foreground);
+  background-clip: padding-box;
 }
 
 
@@ -116,8 +120,8 @@ input, select, textarea { font-size: 16px; }
 .overflow-x-auto > table { min-width: 640px; }
 table th { white-space: nowrap; }
 
-/* Cegah halaman melebar ke samping di layar kecil */
-html, body { max-width: 100%; overflow-x: hidden; }
+/* Cegah gambar melebar melewati layar kecil */
+html, body { max-width: 100%; }
 img, svg, video { max-width: 100%; }
 
 /* Modal bisa di-scroll di layar kecil */
