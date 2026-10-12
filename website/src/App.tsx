@@ -76,7 +76,7 @@ function AdminShell() {
   const PageComponent = PageMap[currentPage]
 
   return (
-    <div className="flex h-dvh overflow-hidden" style={{ background: 'var(--color-background)' }}>
+    <div className="flex min-h-dvh" style={{ background: 'var(--color-background)' }}>
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
@@ -86,7 +86,7 @@ function AdminShell() {
       )}
 
       <div
-        className={`fixed lg:relative inset-y-0 left-0 z-50 lg:z-auto flex-shrink-0 transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
+        className={`fixed lg:sticky lg:top-0 lg:self-start inset-y-0 left-0 z-50 lg:z-auto flex-shrink-0 transition-transform duration-200 lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         {sidebarOpen && (
           <div className="lg:hidden absolute right-0 top-3 translate-x-full">
@@ -109,9 +109,9 @@ function AdminShell() {
         />
       </div>
 
-      <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+      <div className="flex-1 flex flex-col min-w-0">
         <header
-          className="shrink-0 px-4 border-b flex items-center gap-3 lg:hidden"
+          className="sticky top-0 z-30 shrink-0 px-4 border-b flex items-center gap-3 lg:hidden"
           style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)', height: '56px' }}
         >
           <button
@@ -134,7 +134,7 @@ function AdminShell() {
         </header>
 
         <header
-          className="hidden lg:flex shrink-0 px-6 py-4 border-b items-center justify-between"
+          className="hidden lg:flex sticky top-0 z-30 shrink-0 px-6 py-4 border-b items-center justify-between"
           style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}
         >
           <div>
@@ -157,7 +157,7 @@ function AdminShell() {
         </div>
 
         <main
-          className="flex-1 min-h-0 overflow-y-auto p-4 md:p-5 lg:p-6"
+          className="flex-1 p-4 md:p-5 lg:p-6"
           style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
         >
           <Suspense
