@@ -24,6 +24,34 @@ async function getById(req, res) {
   res.json(rows[0])
 }
 
+// GET /api/kamar/:id/riwayat  (publik — dipakai Portal Santri utk lihat riwayat setoran kamar)
+// Hanya field yang aman ditampilkan: tanpa nama piket. Catatan hanya untuk setoran yang ditolak.
+async function getRiwayat(req, res) {
+  const [kamarRows] = await pool.query('SELECT id FROM kamar WHERE id = ?', [req.params.id])
+  if (kamarRows.length === 0) return res.status(404).json({ message: 'Kamar tidak ditemukan.' })
+
+  const [riwayat] = await pool.query(`
+    SELECT s.id, DATE_FORMAT(s.tanggal, '%Y-%m-%d') AS tanggal, t.jenis AS jenisSampah,
+           s.berat_kg AS berat, s.poin, s.status,
+           CASE WHEN s.status = 'ditolak' THEN s.catatan ELSE NULL END AS catatan
+    FROM setoran s
+    JOIN tarif_sampah t ON t.id = s.tarif_sampah_id
+    WHERE s.kamar_id = ?
+    ORDER BY s.tanggal DESC, s.id DESC
+    LIMIT 30
+  `, [req.params.id])
+
+  const [[sum]] = await pool.query(
+    "SELECT COALESCE(SUM(poin), 0) AS poinMenunggu FROM setoran WHERE kamar_id = ? AND status = 'menunggu'",
+    [req.params.id]
+  )
+
+  res.json({
+    poinMenunggu: Number(sum.poinMenunggu),
+    riwayat: riwayat.map((r) => ({ ...r, berat: Number(r.berat) })),
+  })
+}
+
 // POST /api/kamar (protected)
 async function create(req, res) {
   const { nama, asramaId, jumlahSantri } = req.body
@@ -53,4 +81,4 @@ async function remove(req, res) {
   res.json({ message: 'Kamar berhasil dihapus.' })
 }
 
-module.exports = { getAll, getById, create, update, remove }
+module.exports = { getAll, getById, getRiwayat, create, update, remove }
