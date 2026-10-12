@@ -3,6 +3,7 @@ const ctrl = require('../controllers/kamar.controller')
 const { requireAuth } = require('../middleware/auth')
 
 router.get('/', ctrl.getAll)        // publik: dipakai Portal Santri & Website
+router.get('/:id/riwayat', ctrl.getRiwayat) // publik: riwayat setoran kamar (Portal Santri)
 router.get('/:id', ctrl.getById)    // publik
 router.post('/', requireAuth, ctrl.create)
 router.put('/:id', requireAuth, ctrl.update)
