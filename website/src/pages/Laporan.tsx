@@ -136,7 +136,7 @@ export default function Laporan() {
         </div>
         <button
           onClick={() => window.print()}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity border border-[--color-border]"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity border border-(--color-border)"
           style={{ color: 'var(--color-foreground)', background: 'var(--color-card)' }}
         >
           <Download size={14} />
@@ -148,7 +148,7 @@ export default function Laporan() {
         Laporan MIU Connect — {period === 'minggu' ? 'Minggu Ini' : 'Bulan Ini'}
       </h2>
 
-      <div className="no-print flex gap-2 border-b border-[--color-border]">
+      <div className="no-print flex gap-2 border-b border-(--color-border)">
         {([
           { id: 'poin', label: 'Poin & Distribusi Barang' },
           { id: 'sampah', label: 'Sampah per Kategori' },
@@ -170,7 +170,7 @@ export default function Laporan() {
       
       {activeTab === 'poin' && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+          <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
             <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
               Saldo Poin per Kamar
             </h3>
@@ -189,7 +189,7 @@ export default function Laporan() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+            <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Ringkasan Poin
               </h3>
@@ -210,7 +210,7 @@ export default function Laporan() {
               </div>
             </div>
 
-            <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+            <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Barang Paling Sering Ditukar
               </h3>
@@ -237,7 +237,7 @@ export default function Laporan() {
 
       {activeTab === 'sampah' && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+          <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
             <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
               Berat per Jenis Sampah Anorganik
             </h3>
@@ -253,7 +253,7 @@ export default function Laporan() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+            <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Breakdown per Kategori
               </h3>
@@ -279,7 +279,7 @@ export default function Laporan() {
               })}
             </div>
 
-            <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+            <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Dampak Lingkungan
               </h3>
@@ -305,7 +305,7 @@ export default function Laporan() {
 
       {activeTab === 'keuangan' && (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+          <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
             <h3 className="text-base font-semibold mb-5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
               Laporan Kas Pondok — September 2026
             </h3>
@@ -317,7 +317,7 @@ export default function Laporan() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="flex justify-between py-3 border-b border-[--color-border] last:border-0"
+                  className="flex justify-between py-3 border-b border-(--color-border) last:border-0"
                 >
                   <span className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>{item.label}</span>
                   <span
@@ -354,7 +354,7 @@ export default function Laporan() {
           </div>
 
           <div className="space-y-4">
-            <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+            <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Penjualan per Produk Organik
               </h3>
@@ -364,9 +364,9 @@ export default function Laporan() {
                 const totalRp = data.reduce((s, p) => s + Number(p.total), 0)
                 const color = produk === 'Kompos' ? 'var(--color-primary)' : 'var(--color-accent)'
                 return (
-                  <div key={produk} className="mb-3 pb-3 border-b border-[--color-border] last:border-0">
+                  <div key={produk} className="mb-3 pb-3 border-b border-(--color-border) last:border-0">
                     <div className="flex justify-between items-center mb-1">
-                      <span className="text-sm font-semibold text-[--color-foreground]">{produk}</span>
+                      <span className="text-sm font-semibold text-(--color-foreground)">{produk}</span>
                       <span className="text-sm font-bold" style={{ fontFamily: 'var(--font-mono)', color }}>
                         {formatRupiah(totalRp)}
                       </span>
@@ -379,7 +379,7 @@ export default function Laporan() {
               })}
             </div>
 
-            <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+            <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Aliran Dana
               </h3>

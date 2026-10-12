@@ -276,7 +276,7 @@ export default function KategoriSampah() {
         {filtered.map((t) => (
           <div
             key={t.id}
-            className="relative rounded-2xl border border-[--color-border] p-5 flex flex-col gap-3 transition-all hover:shadow-sm"
+            className="relative rounded-2xl border border-(--color-border) p-5 flex flex-col gap-3 transition-all hover:shadow-sm"
             style={{ background: 'var(--color-card)' }}
           >
             <div
@@ -287,7 +287,7 @@ export default function KategoriSampah() {
             </div>
 
             <div className="flex-1">
-              <h4 className="font-semibold text-sm text-[--color-foreground] leading-tight mb-0.5">{t.jenis}</h4>
+              <h4 className="font-semibold text-sm text-(--color-foreground) leading-tight mb-0.5">{t.jenis}</h4>
               <span
                 className="inline-block text-xs px-2 py-0.5 rounded-full font-medium"
                 style={{

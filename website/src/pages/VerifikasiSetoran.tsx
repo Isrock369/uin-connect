@@ -13,9 +13,9 @@ const statusLabel: Record<StatusSetoran, string> = {
 
 function StatusBadge({ status }: { status: StatusSetoran }) {
   const styles: Record<StatusSetoran, string> = {
-    menunggu: 'bg-[--color-warning-bg] text-[--color-warning]',
-    disetujui: 'bg-[--color-success-bg] text-[--color-success]',
-    ditolak: 'bg-[--color-error-bg] text-[--color-error]',
+    menunggu: 'bg-(--color-warning-bg) text-(--color-warning)',
+    disetujui: 'bg-(--color-success-bg) text-(--color-success)',
+    ditolak: 'bg-(--color-error-bg) text-(--color-error)',
   }
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${styles[status]}`}>
@@ -247,8 +247,8 @@ export default function VerifikasiSetoran() {
         </div>
       )}
 
-      <div className="rounded-2xl border border-[--color-border] overflow-hidden" style={{ background: 'var(--color-card)' }}>
-        <div className="p-4 border-b border-[--color-border] flex items-center justify-between gap-4 flex-wrap">
+      <div className="rounded-2xl border border-(--color-border) overflow-hidden" style={{ background: 'var(--color-card)' }}>
+        <div className="p-4 border-b border-(--color-border) flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-4 flex-wrap">
             <div className="flex items-center gap-1.5">
               <Filter size={14} style={{ color: 'var(--color-muted-foreground)' }} />
@@ -302,14 +302,14 @@ export default function VerifikasiSetoran() {
               {sorted.map((s, i) => (
                 <tr
                   key={s.id}
-                  className="border-t border-[--color-border] transition-colors hover:bg-[--color-muted]/30"
+                  className="border-t border-(--color-border) transition-colors hover:bg-(--color-muted)/30"
                   style={{ background: i % 2 === 0 ? 'transparent' : 'rgba(237,231,220,0.2)' }}
                 >
                   <td className="px-4 py-3 text-xs" style={{ color: 'var(--color-muted-foreground)', fontFamily: 'var(--font-mono)' }}>
                     {formatTanggal(s.tanggal)}
                   </td>
-                  <td className="px-4 py-3"><span className="font-semibold text-[--color-foreground]">{s.kamarNama}</span></td>
-                  <td className="px-4 py-3 text-[--color-muted-foreground]">{s.piket}</td>
+                  <td className="px-4 py-3"><span className="font-semibold text-(--color-foreground)">{s.kamarNama}</span></td>
+                  <td className="px-4 py-3 text-(--color-muted-foreground)">{s.piket}</td>
                   <td className="px-4 py-3">
                     <span className="px-2 py-0.5 rounded-md text-xs font-medium" style={{ background: 'var(--color-secondary)', color: 'var(--color-secondary-foreground)' }}>
                       {s.jenisSampah}

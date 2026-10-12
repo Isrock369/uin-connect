@@ -214,7 +214,7 @@ export default function PoinKamar() {
         ].map((stat) => (
           <div
             key={stat.label}
-            className="rounded-2xl p-5 border border-[--color-border]"
+            className="rounded-2xl p-5 border border-(--color-border)"
             style={{ background: 'var(--color-card)' }}
           >
             <div
@@ -223,8 +223,8 @@ export default function PoinKamar() {
             >
               {stat.value}
             </div>
-            <div className="text-sm font-medium text-[--color-foreground]">{stat.label}</div>
-            <div className="text-xs text-[--color-muted-foreground]">{stat.sub}</div>
+            <div className="text-sm font-medium text-(--color-foreground)">{stat.label}</div>
+            <div className="text-xs text-(--color-muted-foreground)">{stat.sub}</div>
           </div>
         ))}
       </div>
@@ -259,10 +259,10 @@ export default function PoinKamar() {
 
       {/* ── Kamar list ── */}
       <div
-        className="rounded-2xl border border-[--color-border] overflow-hidden"
+        className="rounded-2xl border border-(--color-border) overflow-hidden"
         style={{ background: 'var(--color-card)' }}
       >
-        <div className="divide-y divide-[--color-border]">
+        <div className="divide-y divide-(--color-border)">
           {sorted.map((k, i) => {
             const isOpen = expanded === k.id
             const setoranK = setoranByKamar(k.id)
@@ -297,7 +297,7 @@ export default function PoinKamar() {
                     onClick={() => setExpanded(isOpen ? null : k.id)}
                   >
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-[--color-foreground]">{k.nama}</span>
+                      <span className="font-semibold text-(--color-foreground)">{k.nama}</span>
                       <span
                         className="text-xs px-2 py-0.5 rounded-full"
                         style={{
@@ -308,7 +308,7 @@ export default function PoinKamar() {
                         {k.asrama}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1 text-xs text-[--color-muted-foreground] mt-0.5">
+                    <div className="flex items-center gap-1 text-xs text-(--color-muted-foreground) mt-0.5">
                       <Users size={11} />
                       <span>{k.jumlahSantri} santri</span>
                       {k.lastSetoran && (
@@ -328,7 +328,7 @@ export default function PoinKamar() {
                     >
                       {k.poin.toLocaleString('id-ID')}
                     </div>
-                    <div className="text-xs text-[--color-muted-foreground]">poin</div>
+                    <div className="text-xs text-(--color-muted-foreground)">poin</div>
                   </div>
 
                   {/* Action buttons */}
@@ -390,7 +390,7 @@ export default function PoinKamar() {
                           Riwayat Setoran Disetujui
                         </h4>
                         {setoranK.length === 0 ? (
-                          <p className="text-xs text-[--color-muted-foreground]">
+                          <p className="text-xs text-(--color-muted-foreground)">
                             Belum ada setoran disetujui.
                           </p>
                         ) : (
@@ -422,7 +422,7 @@ export default function PoinKamar() {
                           Riwayat Penukaran
                         </h4>
                         {penukaranK.length === 0 ? (
-                          <p className="text-xs text-[--color-muted-foreground]">Belum ada penukaran.</p>
+                          <p className="text-xs text-(--color-muted-foreground)">Belum ada penukaran.</p>
                         ) : (
                           <div className="space-y-1.5">
                             {penukaranK.map((p) => (
@@ -837,7 +837,7 @@ export default function PoinKamar() {
                         cursor: canAfford ? 'pointer' : 'not-allowed',
                       }}
                     >
-                      <div className="text-sm font-semibold text-[--color-foreground] mb-0.5">
+                      <div className="text-sm font-semibold text-(--color-foreground) mb-0.5">
                         {b.nama}
                       </div>
                       <div
@@ -846,7 +846,7 @@ export default function PoinKamar() {
                       >
                         {b.hargaPoin} pt
                       </div>
-                      <div className="text-xs text-[--color-muted-foreground]">Stok: {b.stok}</div>
+                      <div className="text-xs text-(--color-muted-foreground)">Stok: {b.stok}</div>
                     </button>
                   )
                 })}
@@ -854,11 +854,11 @@ export default function PoinKamar() {
 
             {selectedBarang && (
               <div
-                className="mb-5 p-4 rounded-xl border border-[--color-border]"
+                className="mb-5 p-4 rounded-xl border border-(--color-border)"
                 style={{ background: 'var(--color-background)' }}
               >
                 <div className="flex items-center justify-between mb-3">
-                  <span className="text-sm font-medium text-[--color-foreground]">Jumlah</span>
+                  <span className="text-sm font-medium text-(--color-foreground)">Jumlah</span>
                   <div className="flex items-center gap-3">
                     <button
                       onClick={() => setJumlah((j) => Math.max(1, j - 1))}

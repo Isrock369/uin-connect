@@ -21,7 +21,7 @@ function StatCard({
 }) {
   return (
     <div
-      className="rounded-2xl p-5 border border-[--color-border]"
+      className="rounded-2xl p-5 border border-(--color-border)"
       style={{ background: accent ? 'var(--color-primary)' : 'var(--color-card)' }}
     >
       <div className="flex items-start justify-between mb-4">
@@ -98,10 +98,10 @@ export default function Ringkasan() {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold text-[--color-foreground]" style={{ fontFamily: 'var(--font-display)' }}>
+        <h2 className="text-xl font-semibold text-(--color-foreground)" style={{ fontFamily: 'var(--font-display)' }}>
           Selamat datang, {user?.nama || 'Pengurus'} 👋
         </h2>
-        <p className="text-sm text-[--color-muted-foreground] mt-0.5">
+        <p className="text-sm text-(--color-muted-foreground) mt-0.5">
           {new Intl.DateTimeFormat('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).format(new Date())} · MIU Connect
         </p>
       </div>
@@ -112,7 +112,7 @@ export default function Ringkasan() {
           value={totalPoin.toLocaleString('id-ID')}
           sub="8 kamar aktif"
           accent
-          icon={<Coins size={20} className="text-[--color-primary-foreground] opacity-80" />}
+          icon={<Coins size={20} className="text-(--color-primary-foreground) opacity-80" />}
         />
         <StatCard
           label="Setoran Menunggu"
@@ -141,17 +141,17 @@ export default function Ringkasan() {
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
         <div
-          className="lg:col-span-2 rounded-2xl border border-[--color-border] p-5"
+          className="lg:col-span-2 rounded-2xl border border-(--color-border) p-5"
           style={{ background: 'var(--color-card)' }}
         >
           <div className="flex items-center justify-between mb-5">
             <h3
-              className="text-base font-semibold text-[--color-foreground]"
+              className="text-base font-semibold text-(--color-foreground)"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Klasemen Kamar
             </h3>
-            <span className="text-xs text-[--color-muted-foreground]">Berdasarkan total poin</span>
+            <span className="text-xs text-(--color-muted-foreground)">Berdasarkan total poin</span>
           </div>
           <div className="space-y-3">
             {sorted.map((kamar, i) => (
@@ -159,7 +159,7 @@ export default function Ringkasan() {
                 <span className="text-base w-6 text-center shrink-0">{medals[i] ?? String(i + 1)}</span>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-[--color-foreground] truncate">{kamar.nama}</span>
+                    <span className="text-sm font-medium text-(--color-foreground) truncate">{kamar.nama}</span>
                     <span
                       className="text-xs font-semibold ml-2 shrink-0"
                       style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-primary)' }}
@@ -177,7 +177,7 @@ export default function Ringkasan() {
                       }}
                     />
                   </div>
-                  <div className="text-xs text-[--color-muted-foreground] mt-0.5">{kamar.asrama}</div>
+                  <div className="text-xs text-(--color-muted-foreground) mt-0.5">{kamar.asrama}</div>
                 </div>
               </div>
             ))}
@@ -186,11 +186,11 @@ export default function Ringkasan() {
 
         <div className="flex flex-col gap-4">
           <div
-            className="rounded-2xl border border-[--color-border] p-5"
+            className="rounded-2xl border border-(--color-border) p-5"
             style={{ background: 'var(--color-card)' }}
           >
             <h3
-              className="text-base font-semibold text-[--color-foreground] mb-3"
+              className="text-base font-semibold text-(--color-foreground) mb-3"
               style={{ fontFamily: 'var(--font-display)' }}
             >
               Aktivitas Terbaru
@@ -221,10 +221,10 @@ export default function Ringkasan() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-[--color-foreground] truncate">
+                    <p className="text-xs font-medium text-(--color-foreground) truncate">
                       {s.kamarNama} — {s.jenisSampah}
                     </p>
-                    <p className="text-xs text-[--color-muted-foreground]">
+                    <p className="text-xs text-(--color-muted-foreground)">
                       {s.berat} kg · {formatTanggalPendek(s.tanggal)}
                     </p>
                   </div>

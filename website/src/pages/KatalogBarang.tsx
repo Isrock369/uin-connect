@@ -148,7 +148,7 @@ export default function KatalogBarang() {
         {filtered.map((b) => (
           <div
             key={b.id}
-            className="rounded-2xl border border-[--color-border] p-5 flex flex-col gap-3 transition-all hover:shadow-sm"
+            className="rounded-2xl border border-(--color-border) p-5 flex flex-col gap-3 transition-all hover:shadow-sm"
             style={{ background: 'var(--color-card)' }}
           >
             <div
@@ -159,7 +159,7 @@ export default function KatalogBarang() {
             </div>
 
             <div className="flex-1">
-              <h4 className="font-semibold text-sm text-[--color-foreground] leading-tight mb-0.5">{b.nama}</h4>
+              <h4 className="font-semibold text-sm text-(--color-foreground) leading-tight mb-0.5">{b.nama}</h4>
               <span
                 className="inline-block text-xs px-2 py-0.5 rounded-full font-medium"
                 style={{

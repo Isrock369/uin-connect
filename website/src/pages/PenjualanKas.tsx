@@ -114,7 +114,7 @@ export default function PenjualanKas() {
         </div>
       )}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+        <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
           <div className="flex items-center gap-2 mb-2">
             <Leaf size={16} style={{ color: 'var(--color-primary)' }} />
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
@@ -128,7 +128,7 @@ export default function PenjualanKas() {
             {penjualan.length} transaksi · Sep 2026
           </div>
         </div>
-        <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-card)' }}>
+        <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingUp size={16} style={{ color: 'var(--color-success)' }} />
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
@@ -140,7 +140,7 @@ export default function PenjualanKas() {
           </div>
           <div className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>Sep 2026</div>
         </div>
-        <div className="rounded-2xl border border-[--color-border] p-5" style={{ background: 'var(--color-primary)' }}>
+        <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-primary)' }}>
           <div className="flex items-center gap-2 mb-2">
             <TrendingDown size={16} style={{ color: 'rgba(245,240,232,0.7)' }} />
             <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'rgba(245,240,232,0.7)' }}>
@@ -156,7 +156,7 @@ export default function PenjualanKas() {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-[--color-border]">
+      <div className="flex gap-2 border-b border-(--color-border)">
         {(['penjualan', 'kas'] as TabId[]).map((tab) => (
           <button
             key={tab}
@@ -185,7 +185,7 @@ export default function PenjualanKas() {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-[--color-border] overflow-hidden" style={{ background: 'var(--color-card)' }}>
+          <div className="rounded-2xl border border-(--color-border) overflow-hidden" style={{ background: 'var(--color-card)' }}>
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -201,11 +201,11 @@ export default function PenjualanKas() {
                 {[...penjualan]
                   .sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
                   .map((p) => (
-                    <tr key={p.id} className="border-t border-[--color-border] hover:bg-[--color-muted]/30 transition-colors">
+                    <tr key={p.id} className="border-t border-(--color-border) hover:bg-(--color-muted)/30 transition-colors">
                       <td className="px-4 py-3 text-xs" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-muted-foreground)' }}>
                         {formatTanggal(p.tanggal)}
                       </td>
-                      <td className="px-4 py-3 font-medium text-[--color-foreground]">{p.pembeli}</td>
+                      <td className="px-4 py-3 font-medium text-(--color-foreground)">{p.pembeli}</td>
                       <td className="px-4 py-3">
                         <span
                           className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
@@ -249,7 +249,7 @@ export default function PenjualanKas() {
             </button>
           </div>
 
-          <div className="rounded-2xl border border-[--color-border] overflow-hidden" style={{ background: 'var(--color-card)' }}>
+          <div className="rounded-2xl border border-(--color-border) overflow-hidden" style={{ background: 'var(--color-card)' }}>
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -263,11 +263,11 @@ export default function PenjualanKas() {
               </thead>
               <tbody>
                 {kasWithBalance.map((t) => (
-                  <tr key={t.id} className="border-t border-[--color-border] hover:bg-[--color-muted]/30 transition-colors">
+                  <tr key={t.id} className="border-t border-(--color-border) hover:bg-(--color-muted)/30 transition-colors">
                     <td className="px-4 py-3 text-xs" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-muted-foreground)' }}>
                       {formatTanggal(t.tanggal)}
                     </td>
-                    <td className="px-4 py-3 text-[--color-foreground]">{t.keterangan}</td>
+                    <td className="px-4 py-3 text-(--color-foreground)">{t.keterangan}</td>
                     <td className="px-4 py-3">
                       <span
                         className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold"

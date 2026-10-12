@@ -153,12 +153,12 @@ export default function Kampanye() {
           { label: 'Kampanye Aktif', value: aktif, sub: 'sedang berjalan', color: 'var(--color-success)' },
           { label: 'Akan Datang', value: mendatang, sub: 'segera dimulai', color: 'var(--color-warning)' },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-2xl p-5 border border-[--color-border]" style={{ background: 'var(--color-card)' }}>
+          <div key={stat.label} className="rounded-2xl p-5 border border-(--color-border)" style={{ background: 'var(--color-card)' }}>
             <div className="text-2xl font-bold mb-1" style={{ fontFamily: 'var(--font-mono)', color: stat.color }}>
               {stat.value}
             </div>
-            <div className="text-sm font-medium text-[--color-foreground]">{stat.label}</div>
-            <div className="text-xs text-[--color-muted-foreground]">{stat.sub}</div>
+            <div className="text-sm font-medium text-(--color-foreground)">{stat.label}</div>
+            <div className="text-xs text-(--color-muted-foreground)">{stat.sub}</div>
           </div>
         ))}
       </div>
@@ -215,13 +215,13 @@ export default function Kampanye() {
           return (
             <div
               key={k.id}
-              className="rounded-2xl border border-[--color-border] overflow-hidden transition-all hover:shadow-sm cursor-pointer"
+              className="rounded-2xl border border-(--color-border) overflow-hidden transition-all hover:shadow-sm cursor-pointer"
               style={{ background: 'var(--color-card)' }}
               onClick={() => setSelected(k)}
             >
               {/* Card header */}
               <div
-                className="px-5 py-4 flex items-center justify-between border-b border-[--color-border]"
+                className="px-5 py-4 flex items-center justify-between border-b border-(--color-border)"
                 style={{ background: k.status === 'aktif' ? 'var(--color-secondary)' : 'var(--color-muted)' }}
               >
                 <div className="flex items-center gap-3">
@@ -307,7 +307,7 @@ export default function Kampanye() {
               </div>
 
               {/* Card footer */}
-              <div className="px-5 py-3 border-t border-[--color-border] flex justify-end gap-2">
+              <div className="px-5 py-3 border-t border-(--color-border) flex justify-end gap-2">
                 <button
                   onClick={(e) => { e.stopPropagation(); openEdit(k) }}
                   className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium hover:opacity-70"
@@ -341,7 +341,7 @@ export default function Kampanye() {
           <div className="w-full max-w-xl rounded-2xl shadow-xl flex flex-col max-h-[92vh]" style={{ background: 'var(--color-card)' }}>
             {/* Header */}
             <div
-              className="px-6 py-5 border-b border-[--color-border] flex items-start gap-4"
+              className="px-6 py-5 border-b border-(--color-border) flex items-start gap-4"
               style={{ background: selected.status === 'aktif' ? 'var(--color-secondary)' : 'var(--color-muted)' }}
             >
               <div className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl shrink-0" style={{ background: 'var(--color-card)' }}>
@@ -415,7 +415,7 @@ export default function Kampanye() {
               </div>
 
               {selected.syarat && (
-                <div className="rounded-xl p-4 border border-[--color-border]" style={{ background: 'var(--color-background)' }}>
+                <div className="rounded-xl p-4 border border-(--color-border)" style={{ background: 'var(--color-background)' }}>
                   <div className="flex items-center gap-1.5 mb-2">
                     <AlertCircle size={13} style={{ color: 'var(--color-warning)' }} />
                     <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>
@@ -441,7 +441,7 @@ export default function Kampanye() {
               )}
             </div>
 
-            <div className="flex items-center justify-between px-6 py-4 border-t border-[--color-border] shrink-0">
+            <div className="flex items-center justify-between px-6 py-4 border-t border-(--color-border) shrink-0">
               <button
                 onClick={() => { openEdit(selected); setSelected(null) }}
                 className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-70"
@@ -465,7 +465,7 @@ export default function Kampanye() {
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.55)' }}>
           <div className="w-full max-w-2xl rounded-2xl shadow-xl flex flex-col max-h-[92vh]" style={{ background: 'var(--color-card)' }}>
-            <div className="flex items-center justify-between px-6 py-5 border-b border-[--color-border] shrink-0">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-(--color-border) shrink-0">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 {editTarget ? 'Edit Kampanye' : 'Tambah Kampanye'}
               </h3>
@@ -598,7 +598,7 @@ export default function Kampanye() {
               </div>
             </div>
 
-            <div className="flex justify-end gap-3 px-6 py-4 border-t border-[--color-border] shrink-0">
+            <div className="flex justify-end gap-3 px-6 py-4 border-t border-(--color-border) shrink-0">
               <button onClick={() => setShowModal(false)}
                 className="px-4 py-2 rounded-xl text-sm font-medium hover:opacity-80"
                 style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}>
