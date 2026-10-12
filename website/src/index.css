@@ -112,6 +112,14 @@ input, select, textarea { font-size: 16px; }
   input, select, textarea { font-size: 14px; }
 }
 
+/* Tabel: tidak menciut di HP, geser ke samping bila perlu */
+.overflow-x-auto > table { min-width: 640px; }
+table th { white-space: nowrap; }
+
+/* Cegah halaman melebar ke samping di layar kecil */
+html, body { max-width: 100%; overflow-x: hidden; }
+img, svg, video { max-width: 100%; }
+
 /* Modal bisa di-scroll di layar kecil */
 div.fixed.inset-0.z-50 { overflow-y: auto; overscroll-behavior: contain; animation: fade-in .15s ease-out; }
 div.fixed.inset-0.z-50 > div { max-height: calc(100dvh - 2rem); overflow-y: auto; animation: pop-in .18s ease-out; }
