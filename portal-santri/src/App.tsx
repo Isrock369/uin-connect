@@ -103,6 +103,14 @@ export default function App() {
   useEffect(loadData, [])
   useEffect(() => () => stopPolling(), [])
 
+  // Begitu santri masuk ke langkah "Timbang", web langsung terhubung ke sensor
+  // timbangan (tanpa perlu menekan tombol). Keluar dari langkah ini = berhenti.
+  useEffect(() => {
+    if (step === 'sensor') activateSensor()
+    else stopPolling()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step])
+
   function stopPolling() {
     aktifRef.current = false
     if (pollingRef.current) {
@@ -790,7 +798,7 @@ export default function App() {
               <div className="min-h-[32px] flex items-center justify-center">
                 {sensorStatus === 'idle' && (
                   <p className="text-xs text-center" style={{ color: '#374151' }}>
-                    Letakkan sampah pada timbangan, lalu tekan Aktifkan Sensor
+                    Tidak terhubung ke timbangan. Tekan tombol di bawah untuk mencoba lagi.
                   </p>
                 )}
                 {sensorStatus === 'connecting' && (
@@ -844,7 +852,7 @@ export default function App() {
                   style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
                 >
                   <Scale size={20} />
-                  Aktifkan Sensor Timbangan
+                  Hubungkan Ulang ke Timbangan
                 </button>
               )}
 
@@ -869,7 +877,7 @@ export default function App() {
                     {submitting ? 'Mengirim...' : `Kirim Setoran (${finalWeight.toFixed(2)} kg)`}
                   </button>
                   <button
-                    onClick={resetSensor}
+                    onClick={activateSensor}
                     disabled={submitting}
                     className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-60"
                     style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
