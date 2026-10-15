@@ -1,4 +1,4 @@
-# Backend — MIU Connect
+# Backend — UIN Connect (Bank Sampah Pesantren)
 
 Node.js + Express + MySQL (mysql2). Menyediakan REST API untuk 2 frontend:
 - **website/** → dashboard pengurus (perlu login)
@@ -47,6 +47,12 @@ Node.js + Express + MySQL (mysql2). Menyediakan REST API untuk 2 frontend:
 | GET/POST | /api/kampanye | campuran | kampanye mitra eksternal |
 | GET | /api/laporan/ringkasan | login | data agregat untuk Dashboard |
 | GET | /api/laporan/poin-per-kamar | login | data untuk halaman Poin per Kamar |
+| GET | /api/timbangan | publik | berat terakhir dari timbangan, dibaca Portal Santri |
+| POST | /api/timbangan | header X-Device-Key | ESP32 mengirim berat |
+| POST | /api/kamera/minta | publik | Portal meminta foto bukti setoran |
+| GET/POST | /api/kamera/tugas, /api/kamera/foto | header X-Device-Key | ESP32-CAM mengambil tugas dan mengunggah foto |
+| GET | /api/kamera/foto/:setoranId | login | foto bukti untuk halaman Verifikasi |
+| GET | /api/data, /api/data/:table | login + admin | data mentah tabel, untuk debugging (kolom password_hash disembunyikan) |
 
 Semua endpoint publik memang **sengaja tanpa login** karena dipakai oleh Portal Santri
 yang berjalan di alat timbang dan harus bisa langsung dipakai santri piket.
