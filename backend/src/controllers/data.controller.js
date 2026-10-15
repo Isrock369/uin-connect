@@ -2,6 +2,17 @@
 // Berguna untuk keperluan debugging/integrasi cepat dari frontend/service lain.
 const { pool } = require('../config/db')
 
+// Kolom yang tidak boleh keluar lewat endpoint ini, walaupun diakses admin.
+const KOLOM_RAHASIA = ['password_hash']
+
+function bersihkan(rows) {
+  return rows.map((row) => {
+    const salinan = { ...row }
+    for (const kolom of KOLOM_RAHASIA) delete salinan[kolom]
+    return salinan
+  })
+}
+
 // GET /api/data
 // Mengambil daftar semua tabel di database, lalu contoh data (maks 100 baris) dari tiap tabel.
 async function getAll(req, res) {
@@ -14,7 +25,7 @@ async function getAll(req, res) {
     for (const tableName of tableNames) {
       try {
         const [rows] = await pool.query(`SELECT * FROM \`${tableName}\` LIMIT 100`)
-        data[tableName] = rows
+        data[tableName] = bersihkan(rows)
       } catch (err) {
         data[tableName] = { error: `Gagal mengambil data: ${err.message}` }
       }
@@ -43,7 +54,7 @@ async function getByTable(req, res) {
     }
 
     const [rows] = await pool.query(`SELECT * FROM \`${table}\` LIMIT 1000`)
-    res.json(rows)
+    res.json(bersihkan(rows))
   } catch (err) {
     console.error('Gagal mengambil data dari MySQL:', err.message)
     res.status(500).json({ message: 'Gagal terhubung/mengambil data dari database.', error: err.message })

@@ -1,5 +1,13 @@
 const { pool } = require('../config/db')
 
+// Batas berat per setoran, sama dengan batas yang dipakai endpoint timbangan.
+const BERAT_MAKS_KG = 50
+
+function beratValid(berat) {
+  const n = Number(berat)
+  return Number.isFinite(n) && n > 0 && n <= BERAT_MAKS_KG
+}
+
 // GET /api/setoran?status=menunggu  (protected — dipakai Website/Verifikasi)
 async function getAll(req, res) {
   const { status } = req.query
@@ -25,6 +33,9 @@ async function create(req, res) {
   const { kamarId, tarifSampahId, piket, berat } = req.body
   if (!kamarId || !tarifSampahId || !berat) {
     return res.status(400).json({ message: 'kamarId, tarifSampahId, dan berat wajib diisi.' })
+  }
+  if (!beratValid(berat)) {
+    return res.status(400).json({ message: `berat harus lebih dari 0 dan maksimal ${BERAT_MAKS_KG} kg.` })
   }
 
   const [tarifRows] = await pool.query('SELECT poin_per_kg AS poinPerKg, jenis FROM tarif_sampah WHERE id = ?', [tarifSampahId])
@@ -102,6 +113,9 @@ async function update(req, res) {
   const { kamarId, tarifSampahId, piket, tanggal, berat } = req.body
   if (!kamarId || !tarifSampahId || !piket || !berat) {
     return res.status(400).json({ message: 'kamarId, tarifSampahId, piket, dan berat wajib diisi.' })
+  }
+  if (!beratValid(berat)) {
+    return res.status(400).json({ message: `berat harus lebih dari 0 dan maksimal ${BERAT_MAKS_KG} kg.` })
   }
 
   const conn = await pool.getConnection()
