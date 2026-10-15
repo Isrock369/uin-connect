@@ -23,11 +23,15 @@
 #include <HTTPClient.h>
 #include <WebServer.h>
 
-// ---------- ISI BAGIAN INI (sudah terisi sesuai punyamu) ----------
-const char* WIFI_SSID = "Isrock";                                // hotspot HP (2.4 GHz)
-const char* WIFI_PASS = "jancuklu";
-const char* API_HOST  = "uin-connect-production.up.railway.app"; // domain Railway, TANPA https://
-const char* KUNCI_PERANGKAT = "kunciRahasia48xk2m";              // sama dengan TIMBANGAN_KEY di Railway
+// ---------- Pengaturan rahasia ----------
+// Nilai WiFi, domain backend, dan kunci perangkat ada di secrets.h (tidak ikut git).
+// Belum ada? Salin secrets.example.h menjadi secrets.h lalu isi.
+#include "secrets.h"
+
+const char* WIFI_SSID = WIFI_SSID_VALUE;
+const char* WIFI_PASS = WIFI_PASS_VALUE;
+const char* API_HOST  = API_HOST_VALUE;      // domain backend, TANPA https://
+const char* KUNCI_PERANGKAT = DEVICE_KEY_VALUE; // sama dengan TIMBANGAN_KEY di server
 // ------------------------------------------------------------------
 
 #define KUALITAS_JPEG    75      // 0-100, makin besar makin tajam tapi makin berat dikirim
@@ -171,7 +175,7 @@ long cekTugas() {
   } else {
     gagalBerturut++;
     Serial.printf("Cek tugas gagal, kode: %d\n", kode);
-    if (kode == 401) Serial.println("-> Kunci salah. KUNCI_PERANGKAT harus sama dengan TIMBANGAN_KEY di Railway.");
+    if (kode == 401) Serial.println("-> Kunci salah. KUNCI_PERANGKAT harus sama dengan TIMBANGAN_KEY di server.");
     if (gagalBerturut >= 3) tundaSampai = millis() + 3000;   // jeda dulu kalau server bermasalah
   }
   http.end();
