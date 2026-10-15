@@ -1,183 +1,102 @@
-# UIN Connect — Full Stack Platform
+# UIN Connect — Bank Sampah Pesantren
 
-Proyek ini adalah **platform komunikasi & kolaborasi digital** yang menghubungkan mahasiswa, pengurus organisasi, dan administrator UIN dengan sistem terintegrasi.
+Sistem bank sampah untuk pesantren. Santri piket menimbang sampah di alat timbang IoT, poin masuk ke saldo kamar setelah diverifikasi pengurus, dan poin bisa ditukar dengan barang dari katalog. Di dalam aplikasi, namanya tampil sebagai **MIU Connect**.
 
-Terdiri dari **3 bagian terpisah** yang saling terhubung melalui 1 backend:
+## Komponen
 
 ```
 uin-connect/
-├── database/         → schema.sql (MySQL) — struktur database
-├── backend/          → Node.js + Express + MySQL (REST API)
-├── website/          → React — Dashboard Admin & Pengurus (perlu login)
-└── portal-santri/    → React — Portal Publik Mahasiswa (tanpa login)
+├── database/        schema.sql (MySQL) + skrip pembaruan
+├── backend/         Node.js + Express + MySQL (REST API)
+├── website/         React: dashboard pengurus (perlu login)
+├── portal-santri/   React: layar kiosk di alat timbang (tanpa login)
+└── kamera_web/      Firmware ESP32-CAM untuk foto bukti setoran
 ```
 
-## 📋 Deskripsi Singkat
+Firmware timbangan (ESP32 + load cell HX711) mengirim berat ke backend lewat `POST /api/timbangan`. Kodenya tidak termasuk di repo ini.
 
-**UIN Connect** menyediakan ekosistem digital untuk:
+## Alur kerja
 
-- **Portal Santri (Mahasiswa)** = aplikasi publik tanpa login untuk mahasiswa mengakses informasi umum, berita, panduan, dan fitur dasar lainnya. Diakses melalui ponsel atau kiosk di kampus.
-  
-- **Website Admin/Pengurus** = dashboard administratif dengan akses penuh untuk pengelola organisasi, verifikasi data, manajemen konten, laporan, dan kontrol sistem. Memerlukan login dengan kredensial.
+1. Santri piket memilih kamar dan jenis sampah di **Portal Santri**, lalu menaruh sampah di timbangan.
+2. Portal membaca berat dari backend (dikirim ESP32). Setelah angka stabil, setoran dikirim dan ESP32-CAM memotret sebagai bukti.
+3. Setoran masuk dengan status `menunggu`.
+4. Pengurus membuka halaman **Verifikasi Setoran** di website, melihat foto, lalu menyetujui atau menolak.
+5. Jika disetujui, poin otomatis ditambahkan ke saldo kamar (dalam satu transaksi database).
+6. Kamar menukar poin dengan barang dari katalog. Penjualan kompos/maggot masuk ke buku kas.
 
-Kedua aplikasi ini adalah **proyek React terpisah** (masing-masing punya `package.json`, `node_modules`, `.env` sendiri), tetapi **berbagi satu backend & satu database yang sama**.
+## Fitur website pengurus
 
-## 🔄 Alur Data & Arsitektur
+Ringkasan, Verifikasi Setoran, Poin per Kamar (termasuk kelola asrama dan kamar, serta penukaran poin), Kategori Sampah (tarif poin/kg), Katalog Barang, Penjualan dan Kas, Kampanye mitra, Laporan, dan Panduan.
 
-```
-Mahasiswa membuka aplikasi
-        │
-        ├─────────────────────────────────────┐
-        │                                     │
-        ▼                                     ▼
-   [Portal Santri]               [Website Admin]
-   (React - Publik)              (React - Login)
-   - Baca berita                 - Kelola konten
-   - Akses panduan               - Verifikasi data
-   - Lihat info umum             - Generate laporan
-   - Submit form                 - Manajemen user
-        │                                │
-        └──────────────┬──────────────────┘
-                       │
-                       ▼
-         [Backend API — Node.js + Express]
-         - Authentication (JWT)
-         - Data validation
-         - Business logic
-                       │
-                       ▼
-           [MySQL Database]
-           - Users & roles
-           - Content & berita
-           - Logs & audit trail
-```
+## Cara menjalankan (development)
 
-## 🚀 Cara Menjalankan (Development)
+Butuh Node.js 18+ dan MySQL.
 
-### 1️⃣ Database Setup
+**1. Database**
 
 ```bash
 mysql -u root -p < database/schema.sql
 ```
 
-### 2️⃣ Backend (Port 4000)
+Perintah ini membuat database `bank_sampah_pesantren` beserta data contoh. Database lama dengan nama yang sama akan terhapus.
+
+**2. Backend (port 4000)**
 
 ```bash
 cd backend
 npm install
-cp .env.example .env      # sesuaikan kredensial MySQL
-npm run seed              # buat akun login admin/admin123
-npm run dev               # jalan di http://localhost:4000
+cp .env.example .env     # isi kredensial MySQL, JWT_SECRET, dan TIMBANGAN_KEY
+npm run seed             # membuat akun admin awal
+npm run dev
 ```
 
-**Kredensial default:**
-- Username: `admin`
-- Password: `admin123`
-- ⚠️ Ganti password setelah login pertama
-
-### 3️⃣ Website Admin/Pengurus (Port 5173)
+**3. Website pengurus (port 5173)**
 
 ```bash
 cd website
 npm install
-cp .env.example .env      # set VITE_API_URL=http://localhost:4000
-npm run dev               # jalan di http://localhost:5173
+cp .env.example .env
+npm run dev
 ```
 
-Akses dengan kredensial `admin / admin123` yang dibuat di step 2.
-
-### 4️⃣ Portal Santri (Port 5174)
+**4. Portal Santri (port 5174)**
 
 ```bash
 cd portal-santri
 npm install
-cp .env.example .env      # set VITE_API_URL=http://localhost:4000
-npm run dev               # jalan di http://localhost:5174
+cp .env.example .env
+npm run dev
 ```
 
-Buka langsung tanpa login — tidak perlu autentikasi.
+Jalankan ketiganya di terminal terpisah. Login website memakai akun hasil `npm run seed` (username `admin`). Password awalnya ada di `backend/src/utils/seedAdmin.js`, segera ganti setelah login pertama.
 
----
+**5. Kamera (opsional)**
 
-**Jalankan ketiganya (backend, website, portal-santri) bersamaan di 3 terminal berbeda saat development.**
+Buka `kamera_web/kamera_web.ino` di Arduino IDE. Salin `secrets.example.h` menjadi `secrets.h`, isi WiFi, domain backend, dan kunci perangkat. Pengaturan board ada di komentar bagian atas file `.ino`.
 
-## 📡 Endpoint API Utama
+## Endpoint
 
-| Method | Endpoint | Akses | Keterangan |
-|---|---|---|---|
-| POST | `/api/auth/login` | Publik | Login user, return JWT token |
-| GET | `/api/auth/me` | Login | Data user yang sedang login |
-| GET | `/api/berita` | Publik | Daftar berita/artikel |
-| GET | `/api/berita/:id` | Publik | Detail berita |
-| POST | `/api/berita` | Admin | Buat berita baru |
-| PUT | `/api/berita/:id` | Admin | Edit berita |
-| DELETE | `/api/berita/:id` | Admin | Hapus berita |
-| GET | `/api/panduan` | Publik | Daftar panduan/tutorial |
-| GET | `/api/user/profile` | Login | Profil user yang login |
-| PUT | `/api/user/profile` | Login | Update profil user |
-| GET | `/api/organisasi` | Publik | Daftar organisasi |
-| GET | `/api/laporan` | Admin | Data ringkasan dashboard |
+Daftar lengkap ada di [backend/README.md](backend/README.md). Pembagian aksesnya:
 
-Endpoint yang ditandai **Publik** dapat diakses tanpa token, sementara **Login** memerlukan JWT token valid.
+| Kelompok | Akses | Contoh |
+|---|---|---|
+| Data yang dibaca portal | Publik | `GET /api/kamar`, `GET /api/tarif-sampah`, `GET /api/timbangan` |
+| Kirim setoran dan minta foto | Publik | `POST /api/setoran`, `POST /api/kamera/minta` |
+| ESP32 (timbangan dan kamera) | Header `X-Device-Key` | `POST /api/timbangan`, `POST /api/kamera/foto` |
+| Dashboard pengurus | JWT | verifikasi, katalog, penukaran, kas, laporan |
+| Debug data mentah | JWT + role admin | `GET /api/data`, `GET /api/data/:table` |
 
-## ✅ Status Implementasi
+## Sebelum deploy ke produksi
 
-- ✅ Database MySQL lengkap dengan relasi & seed data
-- ✅ Backend REST API dengan JWT authentication
-- ✅ Website: Login, dashboard, kelola konten (berita, panduan, dll)
-- ✅ Portal Santri: Halaman publik, browsing konten
-- ✅ CORS dan komunikasi antar aplikasi
-- ✅ Responsive design dengan Tailwind CSS
+1. Isi `JWT_SECRET` dengan string acak minimal 32 karakter.
+2. Ganti password akun `admin`.
+3. Isi `TIMBANGAN_KEY` dengan kunci acak dan samakan dengan firmware ESP32.
+4. Jangan commit `.env` dan `kamera_web/secrets.h` (sudah ada di `.gitignore`).
+5. Pakai HTTPS dan tambahkan rate limiting di endpoint login serta endpoint publik.
+6. Set `CORS_ORIGIN_WEBSITE` dan `CORS_ORIGIN_PORTAL` ke domain produksi, dan `VITE_API_URL` di kedua frontend.
 
-## 🔐 Catatan Keamanan
+## Tech stack
 
-Sebelum deployment ke production:
-
-1. **Ganti JWT_SECRET** di `backend/.env` dengan string acak yang panjang:
-   ```
-   JWT_SECRET=your-super-secret-key-here-min-32-chars
-   ```
-
-2. **Ganti password admin** setelah login pertama (update langsung di database atau via halaman change password)
-
-3. **Set environment variables** yang sesuai untuk masing-masing aplikasi:
-   - Backend: `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`, `JWT_SECRET`
-   - Website: `VITE_API_URL` (URL backend production)
-   - Portal Santri: `VITE_API_URL` (URL backend production)
-
-4. **Aktifkan HTTPS** saat production
-
-5. **Setup rate limiting** di backend untuk mencegah brute force
-
-## 📦 Tech Stack
-
-- **Backend**: Node.js, Express.js, MySQL, JWT
-- **Frontend**: React 18, Vite, TypeScript, Tailwind CSS
-- **Icons**: Lucide React
-- **Package Manager**: npm
-
-## 🌐 Deployment
-
-### Production Build
-
-```bash
-# Website
-cd website && npm run build
-# Output: dist/ → deploy ke server/CDN
-
-# Portal Santri
-cd portal-santri && npm run build
-# Output: dist/ → deploy ke server/CDN
-
-# Backend
-# Jalankan di server dengan: npm start
-# Atau gunakan PM2: pm2 start src/server.js
-```
-
-## 📧 Support & Kontribusi
-
-Untuk pertanyaan atau kontribusi, silakan buka issue atau hubungi tim development.
-
----
-
-**Made with ❤️ by UIN Connect Team**
+- Backend: Node.js, Express, MySQL (`mysql2`), JWT
+- Frontend: React 18, Vite, TypeScript, Tailwind CSS, Lucide
+- Perangkat: ESP32, ESP32-CAM, load cell + HX711
