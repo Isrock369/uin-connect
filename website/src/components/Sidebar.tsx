@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Smartphone,
   LogOut,
+  Lock,
+  type LucideIcon,
 } from 'lucide-react'
 import logoSrc from '../assets/logo.jpeg'
 import type { PageId } from '../types'
@@ -22,11 +24,12 @@ const PORTAL_SANTRI_URL = import.meta.env.VITE_PORTAL_SANTRI_URL || 'http://loca
 interface NavItem {
   id: PageId
   label: string
-  icon: React.ComponentType<{ size?: number; className?: string }>
+  icon: LucideIcon
   section?: string
 }
 
 const navItems: NavItem[] = [
+  { id: 'ganti-password', label: 'Ganti Password', icon: Lock, section: 'Akun' },
   { id: 'ringkasan', label: 'Dashboard', icon: LayoutDashboard, section: 'Operasional' },
   { id: 'verifikasi', label: 'Verifikasi Setoran', icon: ClipboardCheck },
   { id: 'poin-kamar', label: 'Poin per Kamar', icon: Trophy },
