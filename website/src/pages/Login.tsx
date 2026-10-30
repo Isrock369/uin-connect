@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react'
+import { useEffect, useState, type FormEvent } from 'react'
 import { Lock, User as UserIcon, AlertCircle } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { ApiError } from '../api/client'
@@ -10,14 +10,38 @@ export default function Login() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [blockedUntil, setBlockedUntil] = useState(0)
+  const [remaining, setRemaining] = useState(0)
+
+  useEffect(() => {
+    if (!blockedUntil) return
+    function tick() {
+      const seconds = Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000))
+      setRemaining(seconds)
+      if (seconds === 0) {
+        setBlockedUntil(0)
+        setError(null)
+      }
+    }
+    tick()
+    const timer = window.setInterval(tick, 1000)
+    return () => window.clearInterval(timer)
+  }, [blockedUntil])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
+    if (submitting || blockedUntil > Date.now()) return
     setError(null)
     setSubmitting(true)
     try {
       await login(username, password)
     } catch (err) {
+      if (err instanceof ApiError && err.status === 429) {
+        const seconds = err.retryAfterSeconds || 900
+        setRemaining(seconds)
+        setBlockedUntil(Date.now() + seconds * 1000)
+        setPassword('')
+      }
       setError(err instanceof ApiError ? err.message : 'Gagal terhubung ke server.')
     } finally {
       setSubmitting(false)
@@ -48,11 +72,12 @@ export default function Login() {
 
         {error && (
           <div
+            role="alert"
             className="flex items-center gap-2 text-sm rounded-xl p-3 mb-4"
             style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
           >
             <AlertCircle size={16} />
-            {error}
+            {remaining > 0 ? 'Percobaan login dibatasi sementara. Tunggu sampai hitungan selesai, lalu coba lagi.' : error}
           </div>
         )}
 
@@ -68,6 +93,8 @@ export default function Login() {
               <UserIcon size={16} style={{ color: 'var(--color-muted-foreground)' }} />
               <input
                 type="text"
+                autoComplete="username"
+                maxLength={50}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
@@ -90,6 +117,8 @@ export default function Login() {
               <Lock size={16} style={{ color: 'var(--color-muted-foreground)' }} />
               <input
                 type="password"
+                autoComplete="current-password"
+                maxLength={128}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -102,11 +131,11 @@ export default function Login() {
 
           <button
             type="submit"
-            disabled={submitting}
+            disabled={submitting || remaining > 0}
             className="w-full py-3 rounded-xl text-sm font-bold disabled:opacity-60"
             style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
           >
-            {submitting ? 'Memproses...' : 'Masuk'}
+            {remaining > 0 ? `Coba lagi ${Math.floor(remaining / 60)}:${String(remaining % 60).padStart(2, '0')}` : submitting ? 'Memproses...' : 'Masuk'}
           </button>
         </form>
       </div>
