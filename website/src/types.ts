@@ -8,6 +8,7 @@ export type PageId =
   | 'laporan'
   | 'panduan'
   | 'kampanye'
+  | 'ganti-password'
 
 export interface Kamar {
   id: string
