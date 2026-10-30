@@ -8,14 +8,14 @@ const LOGIN_WAIT_KEY = 'miu_login_wait_until'
 
 function saveWaitUntil(deadline: number) {
   try {
-    if (deadline > 0) sessionStorage.setItem(LOGIN_WAIT_KEY, String(deadline))
-    else sessionStorage.removeItem(LOGIN_WAIT_KEY)
+    if (deadline > 0) localStorage.setItem(LOGIN_WAIT_KEY, String(deadline))
+    else localStorage.removeItem(LOGIN_WAIT_KEY)
   } catch {}
 }
 
 function restoreWaitUntil() {
   try {
-    const deadline = Number(sessionStorage.getItem(LOGIN_WAIT_KEY))
+    const deadline = Number(localStorage.getItem(LOGIN_WAIT_KEY))
     if (Number.isFinite(deadline) && deadline > Date.now() && deadline <= Date.now() + 900_000) {
       return deadline
     }
@@ -32,6 +32,18 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false)
   const [blockedUntil, setBlockedUntil] = useState(restoreWaitUntil)
   const [remaining, setRemaining] = useState(() => Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000)))
+
+  useEffect(() => {
+    function syncWait(event: StorageEvent) {
+      if (event.key !== LOGIN_WAIT_KEY && event.key !== null) return
+      const deadline = restoreWaitUntil()
+      setBlockedUntil(deadline)
+      setRemaining(Math.max(0, Math.ceil((deadline - Date.now()) / 1000)))
+      if (!deadline) setError(null)
+    }
+    window.addEventListener('storage', syncWait)
+    return () => window.removeEventListener('storage', syncWait)
+  }, [])
 
   useEffect(() => {
     if (!blockedUntil) return
