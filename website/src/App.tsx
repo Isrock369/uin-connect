@@ -17,8 +17,10 @@ const PenjualanKas = lazy(() => import('./pages/PenjualanKas'))
 const Laporan = lazy(() => import('./pages/Laporan'))
 const Panduan = lazy(() => import('./pages/Panduan'))
 const Kampanye = lazy(() => import('./pages/Kampanye'))
+const GantiPassword = lazy(() => import('./pages/GantiPassword'))
 
 const pageTitles: Record<PageId, string> = {
+  'ganti-password': 'Ganti Password',
   ringkasan: 'Dashboard',
   verifikasi: 'Verifikasi Setoran',
   'poin-kamar': 'Poin per Kamar',
@@ -31,6 +33,7 @@ const pageTitles: Record<PageId, string> = {
 }
 
 const pageSubtitles: Record<PageId, string> = {
+  'ganti-password': 'Kelola keamanan akun kamu',
   ringkasan: 'Ikhtisar aktivitas MIU Connect',
   verifikasi: 'Tinjau dan setujui setoran sampah dari kamar (dikirim dari Portal Santri)',
   'poin-kamar': 'Kelola saldo poin dan penukaran barang',
@@ -62,6 +65,7 @@ function AdminShell() {
   }
 
   const PageMap: Record<PageId, React.ComponentType> = {
+    'ganti-password': GantiPassword,
     ringkasan: Ringkasan,
     verifikasi: VerifikasiSetoran,
     'poin-kamar': PoinKamar,
