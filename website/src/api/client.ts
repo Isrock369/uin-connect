@@ -17,9 +17,11 @@ export function clearToken() {
 
 export class ApiError extends Error {
   status: number
-  constructor(message: string, status: number) {
+  retryAfterSeconds: number
+  constructor(message: string, status: number, retryAfterSeconds = 0) {
     super(message)
     this.status = status
+    this.retryAfterSeconds = retryAfterSeconds
   }
 }
 
@@ -47,7 +49,9 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     if (res.status === 401) clearToken() // sesi habis -> paksa logout di AuthContext
-    throw new ApiError(data?.message || 'Terjadi kesalahan pada server.', res.status)
+    const retry = Number(data?.retryAfterSeconds)
+    throw new ApiError(data?.message || 'Terjadi kesalahan pada server.', res.status,
+      Number.isFinite(retry) && retry > 0 ? Math.ceil(retry) : 0)
   }
 
   return data as T
