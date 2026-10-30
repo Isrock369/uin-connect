@@ -4,14 +4,34 @@ import { useAuth } from '../context/AuthContext'
 import { ApiError } from '../api/client'
 import logoSrc from '../assets/logo.jpeg'
 
+const LOGIN_WAIT_KEY = 'miu_login_wait_until'
+
+function saveWaitUntil(deadline: number) {
+  try {
+    if (deadline > 0) sessionStorage.setItem(LOGIN_WAIT_KEY, String(deadline))
+    else sessionStorage.removeItem(LOGIN_WAIT_KEY)
+  } catch {}
+}
+
+function restoreWaitUntil() {
+  try {
+    const deadline = Number(sessionStorage.getItem(LOGIN_WAIT_KEY))
+    if (Number.isFinite(deadline) && deadline > Date.now() && deadline <= Date.now() + 900_000) {
+      return deadline
+    }
+    saveWaitUntil(0)
+  } catch {}
+  return 0
+}
+
 export default function Login() {
   const { login } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
-  const [blockedUntil, setBlockedUntil] = useState(0)
-  const [remaining, setRemaining] = useState(0)
+  const [blockedUntil, setBlockedUntil] = useState(restoreWaitUntil)
+  const [remaining, setRemaining] = useState(() => Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000)))
 
   useEffect(() => {
     if (!blockedUntil) return
@@ -19,6 +39,7 @@ export default function Login() {
       const seconds = Math.max(0, Math.ceil((blockedUntil - Date.now()) / 1000))
       setRemaining(seconds)
       if (seconds === 0) {
+        saveWaitUntil(0)
         setBlockedUntil(0)
         setError(null)
       }
@@ -35,11 +56,14 @@ export default function Login() {
     setSubmitting(true)
     try {
       await login(username, password)
+      saveWaitUntil(0)
     } catch (err) {
       if (err instanceof ApiError && err.status === 429) {
         const seconds = err.retryAfterSeconds || 900
+        const deadline = Date.now() + seconds * 1000
+        saveWaitUntil(deadline)
         setRemaining(seconds)
-        setBlockedUntil(Date.now() + seconds * 1000)
+        setBlockedUntil(deadline)
         setPassword('')
       }
       setError(err instanceof ApiError ? err.message : 'Gagal terhubung ke server.')
@@ -70,7 +94,7 @@ export default function Login() {
           </p>
         </div>
 
-        {error && (
+        {(error || remaining > 0) && (
           <div
             role="alert"
             className="flex items-center gap-2 text-sm rounded-xl p-3 mb-4"
