@@ -3,8 +3,10 @@
 // oleh endpoint Portal Santri yang memang sengaja dibuat publik).
 require('dotenv').config()
 const jwt = require('jsonwebtoken')
+const { pool } = require('../config/db')
+const { credentialVersion } = require('../utils/session')
 
-function requireAuth(req, res, next) {
+async function requireAuth(req, res, next) {
   const authHeader = req.headers.authorization || ''
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : null
 
@@ -12,12 +14,22 @@ function requireAuth(req, res, next) {
     return res.status(401).json({ message: 'Token tidak ditemukan. Silakan login kembali.' })
   }
 
+  let payload
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET)
-    req.user = payload // { id, username, role, nama }
-    next()
+    payload = jwt.verify(token, process.env.JWT_SECRET)
   } catch (err) {
     return res.status(401).json({ message: 'Sesi tidak valid atau sudah habis. Silakan login kembali.' })
+  }
+  try {
+    const [rows] = await pool.query('SELECT id, username, nama, role, password_hash FROM users WHERE id = ?', [payload.id])
+    const user = rows[0]
+    if (!user || payload.credentialVersion !== credentialVersion(user.password_hash)) {
+      return res.status(401).json({ message: 'Sesi sudah berakhir. Silakan login kembali.' })
+    }
+    req.user = { id: user.id, username: user.username, nama: user.nama, role: user.role }
+    next()
+  } catch (err) {
+    next(err)
   }
 }
 
