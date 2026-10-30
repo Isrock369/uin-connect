@@ -18,6 +18,11 @@ export function login(username: string, password: string) {
 export function getMe() {
   return apiFetch<{ user: LoginResponse['user'] }>('/auth/me')
 }
+export function changePassword(currentPassword: string, newPassword: string) {
+  return apiFetch<{ message: string }>('/auth/change-password', {
+    method: 'POST', body: { currentPassword, newPassword },
+  })
+}
 
 // ---------- ASRAMA ----------
 export interface Asrama { id: string; nama: string }
