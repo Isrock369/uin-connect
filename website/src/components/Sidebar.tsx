@@ -1,3 +1,4 @@
+import { useEffect, useId, useRef, useState } from 'react'
 import {
   LayoutDashboard,
   ClipboardCheck,
@@ -9,6 +10,7 @@ import {
   Megaphone,
   Recycle,
   ChevronRight,
+  ChevronUp,
   Smartphone,
   LogOut,
   Lock,
@@ -29,7 +31,6 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { id: 'ganti-password', label: 'Ganti Password', icon: Lock, section: 'Akun' },
   { id: 'ringkasan', label: 'Dashboard', icon: LayoutDashboard, section: 'Operasional' },
   { id: 'verifikasi', label: 'Verifikasi Setoran', icon: ClipboardCheck },
   { id: 'poin-kamar', label: 'Poin per Kamar', icon: Trophy },
@@ -51,6 +52,36 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ currentPage, onNavigate, pendingCount, userNama, userRole, onLogout }: SidebarProps) {
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
+  const profileButtonRef = useRef<HTMLButtonElement>(null)
+  const profilePanelId = useId()
+
+  useEffect(() => {
+    setProfileOpen(false)
+  }, [currentPage])
+
+  useEffect(() => {
+    if (!profileOpen) return
+    function closeOutside(event: PointerEvent) {
+      if (event.target instanceof Node && !profileRef.current?.contains(event.target)) {
+        setProfileOpen(false)
+      }
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setProfileOpen(false)
+        profileButtonRef.current?.focus()
+      }
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [profileOpen])
+
   const inisial = userNama
     .split(' ')
     .map((w) => w[0])
@@ -128,29 +159,53 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
       </div>
 
       {/* User */}
-      <div className="px-4 py-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
-        <div className="flex items-center gap-2.5">
-          <div
+      <div ref={profileRef} onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setProfileOpen(false)
+      }} className="relative shrink-0 px-3 py-3 border-t" style={{ borderColor: 'var(--color-border)' }}>
+        <button
+          ref={profileButtonRef}
+          type="button"
+          onClick={() => setProfileOpen((open) => !open)}
+          aria-expanded={profileOpen}
+          aria-controls={profilePanelId}
+          aria-label={`Menu akun ${userNama}`}
+          className="nav-item flex min-h-12 w-full items-center gap-2.5 rounded-xl px-2 py-2 text-left"
+        >
+          <span
             className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0"
             style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
           >
             {inisial || '?'}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-semibold truncate" style={{ color: 'var(--color-foreground)' }}>
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold truncate" style={{ color: 'var(--color-foreground)' }}>
               {userNama}
-            </div>
-            <div className="text-xs capitalize" style={{ color: 'var(--color-muted-foreground)' }}>{userRole}</div>
+            </span>
+            <span className="block text-xs capitalize" style={{ color: 'var(--color-muted-foreground)' }}>{userRole}</span>
+          </span>
+          <ChevronUp size={16} aria-hidden="true" className={`shrink-0 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+        </button>
+        {profileOpen && (
+          <div id={profilePanelId} className="absolute bottom-full left-3 right-3 z-50 mb-2 rounded-xl border p-2 shadow-lg" style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)' }}>
+            <p className="px-3 py-2 text-xs font-semibold" style={{ color: 'var(--color-muted-foreground)' }}>AKUN SAYA</p>
+            <button type="button" onClick={() => {
+              setProfileOpen(false)
+              profileButtonRef.current?.focus()
+              onNavigate('ganti-password')
+            }} className="nav-item flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm" aria-current={currentPage === 'ganti-password' ? 'page' : undefined}>
+              <Lock size={16} aria-hidden="true" />
+              Ganti Password
+            </button>
+            <div className="my-1 border-t" style={{ borderColor: 'var(--color-border)' }} />
+            <button type="button" onClick={() => {
+              setProfileOpen(false)
+              onLogout()
+            }} className="nav-item flex min-h-11 w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm" style={{ color: 'var(--color-error)' }}>
+              <LogOut size={16} aria-hidden="true" />
+              Keluar
+            </button>
           </div>
-          <button
-            onClick={onLogout}
-            title="Keluar"
-            className="p-2.5 rounded-lg shrink-0"
-            style={{ background: 'var(--color-muted)' }}
-          >
-            <LogOut size={14} style={{ color: 'var(--color-muted-foreground)' }} />
-          </button>
-        </div>
+        )}
       </div>
     </aside>
   )
