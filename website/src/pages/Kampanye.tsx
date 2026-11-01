@@ -141,7 +141,7 @@ export default function Kampanye() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="page-campaign space-y-5">
       {errorMsg && (
         <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
           {errorMsg}
@@ -182,7 +182,7 @@ export default function Kampanye() {
       )}
 
       {/* Filter + Add */}
-      <div className="flex items-center justify-between gap-3 flex-wrap">
+      <div className="page-toolbar flex items-center justify-between gap-3 flex-wrap">
         <div className="flex gap-2">
           {(['semua', 'aktif', 'mendatang', 'selesai'] as const).map((s) => (
             <button
@@ -221,7 +221,7 @@ export default function Kampanye() {
             >
               {/* Card header */}
               <div
-                className="px-5 py-4 flex items-center justify-between border-b border-(--color-border)"
+                className="px-5 py-4 flex items-center justify-between gap-3 flex-wrap border-b border-(--color-border)"
                 style={{ background: k.status === 'aktif' ? 'var(--color-secondary)' : 'var(--color-muted)' }}
               >
                 <div className="flex items-center gap-3">
@@ -644,3 +644,4 @@ export default function Kampanye() {
     </div>
   )
 }
+
