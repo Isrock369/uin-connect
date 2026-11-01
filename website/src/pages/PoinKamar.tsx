@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Gift, ChevronDown, Trophy, X, Check, Plus, Pencil, Trash2, Users, Settings } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
 import {
@@ -165,8 +165,12 @@ export default function PoinKamar() {
   }
 
   // ── Redeem ─────────────────────────────────────────────────────────────────
+  const handleRedeemLock = useRef(false)
+
   async function handleRedeem() {
+    if (handleRedeemLock.current) return
     if (!redeemTarget || !selectedBarang) return
+    handleRedeemLock.current = true
     setRedeemSubmitting(true)
     setErrorMsg(null)
     try {
@@ -178,6 +182,7 @@ export default function PoinKamar() {
     } catch (e) {
       setErrorMsg(e instanceof ApiError ? e.message : 'Gagal menukar poin.')
     } finally {
+      handleRedeemLock.current = false
       setRedeemSubmitting(false)
     }
   }
@@ -930,4 +935,5 @@ export default function PoinKamar() {
     </div>
   )
 }
+
 
