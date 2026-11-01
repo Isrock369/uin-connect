@@ -1,3 +1,4 @@
+const tx = require('../utils/transaction')
 const { todayWib } = require('../utils/businessDate')
 const { pool } = require('../config/db')
 
@@ -5,8 +6,7 @@ const { pool } = require('../config/db')
 const BERAT_MAKS_KG = 50
 
 function beratValid(berat) {
-  const n = Number(berat)
-  return Number.isFinite(n) && n > 0 && n <= BERAT_MAKS_KG
+  try { tx.number(berat, 'Berat', BERAT_MAKS_KG, 2); return true } catch { return false }
 }
 
 // GET /api/setoran?status=menunggu  (protected — dipakai Website/Verifikasi)
@@ -31,34 +31,24 @@ async function getAll(req, res) {
 
 // POST /api/setoran  (PUBLIK — dikirim langsung dari Portal Santri/alat timbang IoT)
 async function create(req, res) {
-  const { kamarId, tarifSampahId, piket, berat } = req.body
-  if (!kamarId || !tarifSampahId || !berat) {
-    return res.status(400).json({ message: 'kamarId, tarifSampahId, dan berat wajib diisi.' })
-  }
-  if (!beratValid(berat)) {
-    return res.status(400).json({ message: `berat harus lebih dari 0 dan maksimal ${BERAT_MAKS_KG} kg.` })
-  }
-
-  const [tarifRows] = await pool.query('SELECT poin_per_kg AS poinPerKg, jenis FROM tarif_sampah WHERE id = ?', [tarifSampahId])
-  if (tarifRows.length === 0) return res.status(404).json({ message: 'Jenis sampah tidak ditemukan.' })
-
-  const poin = Math.round(tarifRows[0].poinPerKg * Number(berat))
-  const tanggal = todayWib()
-
-  const [result] = await pool.query(
-    `INSERT INTO setoran (kamar_id, tarif_sampah_id, piket, tanggal, berat_kg, poin, status)
-     VALUES (?, ?, ?, ?, ?, ?, 'menunggu')`,
-    [kamarId, tarifSampahId, piket || 'Santri (via Portal)', tanggal, berat, poin]
-  )
-
-  res.status(201).json({
-    id: result.insertId,
-    poin,
-    jenisSampah: tarifRows[0].jenis,
-    tanggal,
-    status: 'menunggu',
+  return tx.run(req, res, 'setoran', (b) => {
+    if (b.fotoDiminta !== undefined && typeof b.fotoDiminta !== 'boolean') throw new tx.InputError('fotoDiminta harus boolean.')
+    return { kamarId: tx.number(b.kamarId, 'Kamar'), tarifSampahId: tx.number(b.tarifSampahId, 'Kategori'),
+      piket: tx.text(b.piket ?? 'Santri (via Portal)', 'Piket', 100), berat: tx.number(b.berat, 'Berat', 50, 2), fotoDiminta: b.fotoDiminta === true }
+  }, async (conn, d) => {
+    const [[kamar]] = await conn.query('SELECT id FROM kamar WHERE id = ?', [d.kamarId])
+    const [[tarif]] = await conn.query('SELECT poin_per_kg AS poinPerKg, jenis FROM tarif_sampah WHERE id = ?', [d.tarifSampahId])
+    if (!kamar || !tarif) throw new tx.InputError('Kamar atau kategori sampah tidak ditemukan.', 404)
+    const poin = Math.round(tarif.poinPerKg * d.berat)
+    if (!Number.isSafeInteger(poin) || poin > 2147483647) throw new tx.InputError('Poin setoran melebihi batas.')
+    const tanggal = todayWib()
+    const [result] = await conn.query(`INSERT INTO setoran (kamar_id, tarif_sampah_id, piket, tanggal, berat_kg, poin, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'menunggu')`, [d.kamarId, d.tarifSampahId, d.piket, tanggal, d.berat, poin])
+    if (d.fotoDiminta) await require('../utils/cameraQueue').enqueue(conn, result.insertId)
+    return { id: result.insertId, poin, jenisSampah: tarif.jenis, tanggal, status: 'menunggu' }
   })
 }
+
 
 // PUT /api/setoran/:id/verifikasi  (protected — pengurus setuju/tolak dari Website)
 // Kalau disetujui: poin otomatis ditambahkan ke saldo kamar & last_setoran diupdate,
@@ -111,7 +101,15 @@ async function verifikasi(req, res) {
 // Kalau setoran sudah 'disetujui', poin lama di kamar dikurangi dulu lalu
 // poin baru (hasil recalculate) ditambahkan, semua dalam SATU transaksi.
 async function update(req, res) {
-  const { kamarId, tarifSampahId, piket, tanggal, berat } = req.body
+  let { kamarId, tarifSampahId, piket, tanggal, berat } = req.body
+  try {
+    tx.number(req.params.id, 'ID setoran')
+    kamarId = tx.number(kamarId, 'Kamar')
+    tarifSampahId = tx.number(tarifSampahId, 'Kategori')
+    piket = tx.text(piket, 'Piket', 100)
+    berat = tx.number(berat, 'Berat', 50, 2)
+    if (tanggal !== undefined && tanggal !== '') tanggal = tx.date(tanggal)
+  } catch (e) { return res.status(400).json({ message: e.message }) }
   if (!kamarId || !tarifSampahId || !piket || !berat) {
     return res.status(400).json({ message: 'kamarId, tarifSampahId, piket, dan berat wajib diisi.' })
   }
@@ -136,6 +134,10 @@ async function update(req, res) {
       return res.status(404).json({ message: 'Jenis sampah tidak ditemukan.' })
     }
     const poinBaru = Math.round(tarifRows[0].poinPerKg * Number(berat))
+    if (!Number.isSafeInteger(poinBaru) || poinBaru > 2147483647) {
+      await conn.rollback()
+      return res.status(400).json({ message: 'Poin setoran melebihi batas.' })
+    }
 
     // Kalau setoran lama sudah disetujui dan kamarnya berubah atau tetap sama,
     // batalkan dulu efek poin lama sebelum menerapkan yang baru.
