@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Check, X, AlertCircle, Filter, Plus, Pencil, Trash2, Camera } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
 import { getSetoran, getKamar, getTarifSampah, verifikasiSetoran, updateSetoran, deleteSetoran, getFotoSetoranIds, getFotoSetoran } from '../api/services'
@@ -158,8 +158,14 @@ export default function VerifikasiSetoran() {
     }
   }
 
+  const handleAddLock = useRef(false)
+  const [handleAddBusy, setHandleAddBusy] = useState(false)
+
   async function handleAdd() {
+    if (handleAddLock.current) return
     if (!form.kamarId || !form.piket || !form.tarifSampahId || form.berat <= 0) return
+    handleAddLock.current = true
+    setHandleAddBusy(true)
     setErrorMsg(null)
     try {
       const { apiFetch } = await import('../api/client')
@@ -173,6 +179,9 @@ export default function VerifikasiSetoran() {
       loadAll()
     } catch (e) {
       setErrorMsg(e instanceof ApiError ? e.message : 'Gagal mencatat setoran.')
+    } finally {
+      handleAddLock.current = false
+      setHandleAddBusy(false)
     }
   }
 
@@ -513,7 +522,7 @@ export default function VerifikasiSetoran() {
               </button>
               <button
                 onClick={handleAdd}
-                disabled={!form.kamarId || !form.piket || !form.tarifSampahId || form.berat <= 0}
+                disabled={handleAddBusy || !form.kamarId || !form.piket || !form.tarifSampahId || form.berat <= 0}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
                 style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
               >
@@ -704,4 +713,5 @@ export default function VerifikasiSetoran() {
     </div>
   )
 }
+
 
