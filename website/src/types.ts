@@ -81,18 +81,14 @@ export interface TarifSampah {
   keterangan: string
 }
 
-export type StatusModul = 'published' | 'draft'
-
 export interface Modul {
   id: string
   judul: string
   kategori: string
   deskripsi: string
   konten: string
-  durasi: number
-  status: StatusModul
+  fileName: string | null
   tanggalDibuat: string
-  icon: string
 }
 
 export type StatusKampanye = 'aktif' | 'mendatang' | 'selesai'
@@ -112,3 +108,4 @@ export interface Kampanye {
   kontak: string
   syarat: string
 }
+
