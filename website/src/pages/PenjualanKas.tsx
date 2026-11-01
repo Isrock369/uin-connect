@@ -107,7 +107,7 @@ export default function PenjualanKas() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="page-finance space-y-5">
       {errorMsg && (
         <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
           {errorMsg}
@@ -156,7 +156,7 @@ export default function PenjualanKas() {
         </div>
       </div>
 
-      <div className="flex gap-2 border-b border-(--color-border)">
+      <div className="finance-tabs flex gap-2 border-b border-(--color-border)">
         {(['penjualan', 'kas'] as TabId[]).map((tab) => (
           <button
             key={tab}
@@ -442,3 +442,4 @@ export default function PenjualanKas() {
     </div>
   )
 }
+
