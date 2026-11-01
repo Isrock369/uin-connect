@@ -18,6 +18,13 @@ async function run() {
   try {
     await conn.query('SET FOREIGN_KEY_CHECKS = 0')
 
+    // Hapus bukti/tugas/kunci terlebih dahulu agar ID setoran yang dipakai ulang
+    // setelah reset tidak terhubung dengan transaksi atau foto sebelumnya.
+    await conn.query('TRUNCATE TABLE camera_jobs')
+    await conn.query('TRUNCATE TABLE setoran_foto')
+    await conn.query('TRUNCATE TABLE transaction_requests')
+    await conn.query('UPDATE camera_device SET last_seen = NULL')
+
     await conn.query('TRUNCATE TABLE transaksi_kas')
     console.log('✅ transaksi_kas dikosongkan')
 
