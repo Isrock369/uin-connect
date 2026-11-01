@@ -13,13 +13,13 @@ function input(body) {
   else if (body.file !== undefined) {
     const { name, data } = body.file || {}
     if (typeof name !== 'string' || !/^[^/\\\x00-\x1f]{1,180}\.pdf$/i.test(name) ||
-        typeof data !== 'string' || data.length > 6990508 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) {
-      throw Object.assign(new Error('Unggah file PDF maksimal 5 MB.'), { status: 400 })
+        typeof data !== 'string' || data.length > 83886080 || !/^[A-Za-z0-9+/]*={0,2}$/.test(data)) {
+      throw Object.assign(new Error('Unggah file PDF maksimal 60 MB.'), { status: 400 })
     }
     const buffer = Buffer.from(data, 'base64')
-    if (!buffer.length || buffer.length > 5 * 1024 * 1024 || buffer.toString('base64') !== data ||
+    if (!buffer.length || buffer.length > 60 * 1024 * 1024 || buffer.toString('base64') !== data ||
         buffer.subarray(0, 5).toString() !== '%PDF-' || !buffer.subarray(-1024).includes(Buffer.from('%%EOF'))) {
-      throw Object.assign(new Error('Isi file PDF tidak valid atau melebihi 5 MB.'), { status: 400 })
+      throw Object.assign(new Error('Isi file PDF tidak valid atau melebihi 60 MB.'), { status: 400 })
     }
     file = { name, data: buffer }
   }
