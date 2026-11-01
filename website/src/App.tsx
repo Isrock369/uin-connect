@@ -80,7 +80,7 @@ function AdminShell() {
   const PageComponent = PageMap[currentPage]
 
   return (
-    <div className="flex min-h-dvh" style={{ background: 'var(--color-background)' }}>
+    <div className="app-shell workspace-ui flex min-h-dvh" style={{ background: 'var(--color-background)' }}>
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 lg:hidden"
@@ -161,7 +161,7 @@ function AdminShell() {
         </div>
 
         <main
-          className="flex-1 p-4 md:p-5 lg:p-6"
+          className="workspace-main flex-1 p-4 md:p-5 lg:p-6"
           style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
         >
           <Suspense
@@ -171,7 +171,7 @@ function AdminShell() {
               </p>
             }
           >
-            <div key={currentPage} className="page-enter">
+            <div key={currentPage} className="page-enter workspace-page">
               <PageComponent />
             </div>
           </Suspense>
@@ -202,4 +202,5 @@ export default function App() {
     </AuthProvider>
   )
 }
+
 
