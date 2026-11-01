@@ -1,3 +1,4 @@
+const tx = require('../utils/transaction')
 const { pool } = require('../config/db')
 
 async function getAll(req, res) {
@@ -10,36 +11,17 @@ async function getAll(req, res) {
 
 // POST /api/penjualan (protected) — otomatis bikin entri transaksi_kas 'masuk' (1 transaksi)
 async function create(req, res) {
-  const { tanggal, pembeli, produk, jumlah, hargaPerKg } = req.body
-  if (!tanggal || !pembeli || !produk || !jumlah || !hargaPerKg) {
-    return res.status(400).json({ message: 'Semua field wajib diisi.' })
-  }
-
-  const conn = await pool.getConnection()
-  try {
-    await conn.beginTransaction()
-
-    const [result] = await conn.query(
-      'INSERT INTO penjualan_organik (tanggal, pembeli, produk, jumlah_kg, harga_per_kg, dicatat_oleh) VALUES (?, ?, ?, ?, ?, ?)',
-      [tanggal, pembeli, produk, jumlah, hargaPerKg, req.user.id]
-    )
-    const total = jumlah * hargaPerKg
-
-    await conn.query(
-      `INSERT INTO transaksi_kas (tanggal, keterangan, jenis, jumlah, penjualan_organik_id, dicatat_oleh)
-       VALUES (?, ?, 'masuk', ?, ?, ?)`,
-      [tanggal, `Penjualan ${produk} — ${pembeli}`, total, result.insertId, req.user.id]
-    )
-
-    await conn.commit()
-    res.status(201).json({ id: result.insertId, total })
-  } catch (err) {
-    await conn.rollback()
-    console.error(err)
-    res.status(500).json({ message: 'Gagal mencatat penjualan.' })
-  } finally {
-    conn.release()
-  }
+  return tx.run(req, res, 'penjualan', b => ({ tanggal: tx.date(b.tanggal), pembeli: tx.text(b.pembeli, 'Pembeli', 150), produk: tx.text(b.produk, 'Produk', 100), jumlah: tx.number(b.jumlah, 'Berat', 999999.99, 2), hargaPerKg: tx.number(b.hargaPerKg, 'Harga per kg') }), async (conn, d) => {
+    const total = Math.round(Math.round(d.jumlah * 100) * d.hargaPerKg / 100)
+    if (!Number.isSafeInteger(total) || total < 1 || total > 4294967295) throw new tx.InputError('Total penjualan harus antara Rp1 dan Rp4.294.967.295.')
+    const [r] = await conn.query('INSERT INTO penjualan_organik (tanggal, pembeli, produk, jumlah_kg, harga_per_kg, dicatat_oleh) VALUES (?, ?, ?, ?, ?, ?)', [d.tanggal, d.pembeli, d.produk, d.jumlah, d.hargaPerKg, req.user.id])
+    // Gunakan hasil generated column MySQL supaya nilai kas persis sama.
+    const [[sale]] = await conn.query('SELECT total FROM penjualan_organik WHERE id = ?', [r.insertId])
+    const keterangan = Array.from(`Penjualan ${d.produk} — ${d.pembeli}`).slice(0, 255).join('')
+    await conn.query("INSERT INTO transaksi_kas (tanggal, keterangan, jenis, jumlah, penjualan_organik_id, dicatat_oleh) VALUES (?, ?, 'masuk', ?, ?, ?)", [d.tanggal, keterangan, sale.total, r.insertId, req.user.id])
+    return { id: r.insertId, total: sale.total }
+  })
 }
+
 
 module.exports = { getAll, create }
