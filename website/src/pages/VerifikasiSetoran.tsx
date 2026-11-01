@@ -228,7 +228,7 @@ export default function VerifikasiSetoran() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="page-verification space-y-5">
       <div
         className="rounded-2xl border p-4 flex items-start gap-3"
         style={{ background: 'var(--color-warning-bg)', borderColor: 'var(--color-warning)' }}
@@ -704,3 +704,4 @@ export default function VerifikasiSetoran() {
     </div>
   )
 }
+
