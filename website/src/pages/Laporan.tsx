@@ -117,8 +117,8 @@ export default function Laporan() {
   }
 
   return (
-    <div className="space-y-5">
-      <div className="no-print flex items-center justify-between flex-wrap gap-3">
+    <div className="page-reports space-y-5">
+      <div className="page-toolbar no-print flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2">
           {(['minggu', 'bulan'] as PeriodId[]).map((p) => (
             <button
@@ -413,3 +413,4 @@ export default function Laporan() {
     </div>
   )
 }
+
