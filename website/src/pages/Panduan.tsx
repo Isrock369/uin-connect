@@ -62,7 +62,7 @@ export default function Panduan() {
     try {
       const data = { ...form }
       if (file) {
-        if (!/\.pdf$/i.test(file.name) || file.size === 0 || file.size > 5 * 1024 * 1024) throw new Error('Pilih PDF maksimal 5 MB.')
+        if (!/\.pdf$/i.test(file.name) || file.size === 0 || file.size > 60 * 1024 * 1024) throw new Error('Pilih PDF maksimal 60 MB.')
         const encoded = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = () => resolve(String(reader.result).split(',')[1])
@@ -147,7 +147,7 @@ export default function Panduan() {
             <label className="block">Kategori<select className={control} value={form.kategoriId} onChange={event => setForm({ ...form, kategoriId: event.target.value })}>{categories.map(category => <option key={category.id} value={category.id}>{category.nama}</option>)}</select></label>
             <label className="block">Deskripsi<textarea required maxLength={255} className={control} value={form.deskripsi} onChange={event => setForm({ ...form, deskripsi: event.target.value })} /></label>
             <label className="block">Isi panduan<textarea rows={6} maxLength={16000} className={control} value={form.konten} onChange={event => setForm({ ...form, konten: event.target.value })} /></label>
-            <label className="block">File panduan (PDF, maksimal 5 MB)<input className={control} type="file" accept=".pdf,application/pdf" onChange={event => setFile(event.target.files?.[0] || null)} /></label>
+            <label className="block">File panduan (PDF, maksimal 60 MB)<input className={control} type="file" accept=".pdf,application/pdf" onChange={event => setFile(event.target.files?.[0] || null)} /></label>
             {editing?.fileName && <div><p>File tersimpan: {editing.fileName}</p><label><input type="checkbox" checked={form.file === null} onChange={event => setForm({ ...form, file: event.target.checked ? null : undefined })} /> Hapus lampiran lama</label><p className="text-sm">File baru akan menggantikan lampiran lama. Tanpa perubahan, lampiran tetap tersimpan.</p></div>}
             <div className="sticky bottom-0 bg-(--color-card) border-t border-(--color-border) py-4 flex justify-end gap-3"><button className={primary} type="submit" disabled={!form.judul.trim() || !form.deskripsi.trim()}>Simpan Panduan</button><button className={button} type="button" onClick={() => setShowForm(false)}>Batal</button></div>
           </fieldset>
