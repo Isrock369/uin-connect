@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { Scale, Wifi, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Send, Activity, AlertCircle, Camera, Trophy } from 'lucide-react'
 import logoSrc from './assets/logo.jpeg'
-import { getKamar, getTarifSampah, getRiwayatKamar, kirimSetoran, kameraMintaFoto, kameraHasil } from './api/services'
+import { getKamar, getTarifSampah, getRiwayatKamar, kirimSetoran, kameraHasil } from './api/services'
 import { ApiError } from './api/client'
 import { bacaTimbangan, MODE_LANGSUNG, SUMBER_TIMBANGAN } from './api/timbangan'
 import type { Kamar, TarifSampah, RiwayatKamar } from './types'
@@ -16,7 +16,7 @@ const BERAT_MIN_KG = 0.01 // di bawah ini dianggap timbangan kosong
 const POLL_MS = 300 // seberapa sering web menanyakan berat ke timbangan
 const STABIL_BERTURUT = 2 // butuh 2x balasan "stabil" yang sama berturut-turut
 const MAKS_GAGAL = 3 // gagal 3x berturut-turut -> tampilkan pesan error
-const FOTO_TUNGGU_MS = 10000 // maksimal menunggu foto masuk setelah setoran dikirim
+const FOTO_TUNGGU_MS = 95000 // maksimal menunggu foto masuk setelah setoran dikirim
 
 const JENIS_CONFIG: Record<string, { emoji: string; color: string; bg: string; border: string }> = {
   Organik: { emoji: '🍃', color: '#15803D', bg: '#F0FDF4', border: '#86EFAC' },
@@ -203,8 +203,12 @@ export default function App() {
     setFinalWeight(0)
   }
 
+  const submitLock = useRef(false)
+
   async function handleSubmit() {
+    if (submitLock.current) return
     if (!selectedKamar || !selectedJenis || !finalWeight) return
+    submitLock.current = true
     setSubmitting(true)
     setSubmitError(null)
     try {
@@ -215,21 +219,15 @@ export default function App() {
     } catch (e) {
       setSubmitError(e instanceof ApiError ? e.message : 'Gagal mengirim setoran. Coba lagi.')
     } finally {
+      submitLock.current = false
       setSubmitting(false)
     }
   }
 
-  // Meminta ESP32-CAM memotret setoran ini lalu menunggu sampai fotonya masuk.
+  // Tugas foto dibuat atomik bersama setoran. Portal hanya memantau hasilnya.
   // Kalau kamera tidak aktif atau gagal, setoran TETAP sah (foto hanya bukti tambahan).
   async function ambilFotoBukti(setoranId: number) {
     const token = ++fotoTokenRef.current
-    setFotoStatus('tidak')
-    try {
-      const r = await kameraMintaFoto(setoranId)
-      if (token !== fotoTokenRef.current || !r.kameraOnline) return
-    } catch {
-      return
-    }
     setFotoStatus('menunggu')
     const mulai = Date.now()
     while (Date.now() - mulai < FOTO_TUNGGU_MS) {
@@ -239,6 +237,7 @@ export default function App() {
         const h = await kameraHasil(setoranId)
         if (token !== fotoTokenRef.current) return
         if (h.ada) { setFotoStatus('ok'); return }
+        if (h.status === 'expired' || h.status === 'none') { setFotoStatus('gagal'); return }
       } catch {
         // abaikan, coba lagi sampai batas waktu
       }
@@ -356,10 +355,11 @@ export default function App() {
         <div className="w-full max-w-sm">
           <button
             onClick={resetAll}
+            disabled={fotoStatus === 'menunggu'}
             className="w-full py-3.5 rounded-2xl text-base font-bold"
             style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
           >
-            Setor Sampah Lagi
+            {fotoStatus === 'menunggu' ? 'Menunggu Foto...' : 'Setor Sampah Lagi'}
           </button>
         </div>
       </div>
@@ -911,3 +911,4 @@ export default function App() {
     </div>
   )
 }
+
