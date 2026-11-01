@@ -191,7 +191,7 @@ export default function PoinKamar() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="page-rooms space-y-5">
       {errorMsg && (
         <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
           {errorMsg}
@@ -230,7 +230,7 @@ export default function PoinKamar() {
       </div>
 
       {/* ── Table header ── */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="page-toolbar flex items-center justify-between flex-wrap gap-3">
         <h3
           className="text-base font-semibold"
           style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}
@@ -270,7 +270,7 @@ export default function PoinKamar() {
 
             return (
               <div key={k.id}>
-                <div className="flex items-center gap-4 px-4 py-4">
+                <div className="room-row flex items-center gap-3 sm:gap-4 px-4 py-4">
                   {/* Rank / trophy */}
                   <div
                     className="w-8 text-center shrink-0 cursor-pointer"
@@ -930,3 +930,4 @@ export default function PoinKamar() {
     </div>
   )
 }
+
