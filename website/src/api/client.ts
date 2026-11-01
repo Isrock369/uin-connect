@@ -71,3 +71,4 @@ export async function apiFetchBlob(path: string): Promise<Blob> {
   }
   return res.blob()
 }
+
