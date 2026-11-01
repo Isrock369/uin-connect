@@ -24,7 +24,7 @@ export interface SetoranResponse {
 export function kirimSetoran(kamarId: string, tarifSampahId: string, berat: number) {
   return apiFetch<SetoranResponse>('/setoran', {
     method: 'POST',
-    body: { kamarId, tarifSampahId, piket: 'Santri (via Portal)', berat },
+    body: { kamarId, tarifSampahId, piket: 'Santri (via Portal)', berat: Number(berat.toFixed(2)), fotoDiminta: true },
   })
 }
 
@@ -56,5 +56,6 @@ export function kameraMintaFoto(setoranId: number | string) {
 
 // Menanyakan apakah foto untuk setoran ini sudah masuk ke server.
 export function kameraHasil(setoranId: number | string) {
-  return apiFetch<{ ada: boolean }>(`/kamera/hasil/${setoranId}`)
+  return apiFetch<{ ada: boolean; status: 'pending' | 'claimed' | 'done' | 'expired' | 'none' }>(`/kamera/hasil/${setoranId}`)
 }
+
