@@ -1,3 +1,4 @@
+const { todayWib } = require('../utils/businessDate')
 const { pool } = require('../config/db')
 
 async function getAll(req, res) {
@@ -42,7 +43,7 @@ async function create(req, res) {
       return res.status(400).json({ message: 'Stok barang tidak mencukupi.' })
     }
 
-    const tanggal = new Date().toISOString().slice(0, 10)
+    const tanggal = todayWib()
     const [result] = await conn.query(
       'INSERT INTO penukaran (kamar_id, barang_id, jumlah, poin_digunakan, tanggal, diproses_oleh) VALUES (?, ?, ?, ?, ?, ?)',
       [kamarId, barangId, jumlah, totalPoin, tanggal, req.user.id]
