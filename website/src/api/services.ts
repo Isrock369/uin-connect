@@ -139,7 +139,7 @@ export function createKas(data: Omit<TransaksiKas, 'id'>) {
 // ---------- MODUL EDUKASI (Panduan) ----------
 export interface ModulInput {
   judul: string
-  kategori: string
+  kategoriId: string
   deskripsi: string
   konten: string
   file?: { name: string; data: string } | null
@@ -185,5 +185,16 @@ export function getRingkasan() {
 
 export function getModulFile(id: string) {
   return apiFetchBlob(`/modul/${id}/file`)
+}
+
+
+export function getKategoriPanduan() {
+  return apiFetch<{ id: string; nama: string; jumlah: number }[]>('/modul/kategori')
+}
+export function saveKategoriPanduan(id: string | null, nama: string) {
+  return apiFetch('/modul/kategori' + (id ? '/' + id : ''), { method: id ? 'PUT' : 'POST', body: { nama } })
+}
+export function deleteKategoriPanduan(id: string) {
+  return apiFetch('/modul/kategori/' + id, { method: 'DELETE' })
 }
 
