@@ -1,12 +1,13 @@
 const { pool } = require('../config/db')
-const fields = 'id, judul, kategori, deskripsi, konten, tanggal_dibuat AS tanggalDibuat, file_name AS fileName'
+const fields = 'modul.id, judul, kategori.nama AS kategori, kategori_id AS kategoriId, deskripsi, konten, tanggal_dibuat AS tanggalDibuat, file_name AS fileName'
 
 function input(body) {
-  const values = ['judul', 'kategori', 'deskripsi', 'konten'].map(key => body?.[key])
-  const limits = [150, 50, 255, 16000]
+  const values = ['judul', 'kategoriId', 'deskripsi', 'konten'].map(key => body?.[key])
+  const limits = [150, 10, 255, 16000]
   if (values.some((value, index) => typeof value !== 'string' || value.length > limits[index] || (index < 3 && !value.trim()))) {
     throw Object.assign(new Error('Judul, kategori, deskripsi atau konten tidak valid.'), { status: 400 })
   }
+  if (!/^[1-9][0-9]*$/.test(values[1])) throw Object.assign(new Error('Pilih kategori yang valid.'), { status: 400 })
   let file
   if (body.file === null) file = { name: null, data: null }
   else if (body.file !== undefined) {
@@ -26,14 +27,14 @@ function input(body) {
 }
 
 async function getAll(req, res) {
-  const [rows] = await pool.query('SELECT ' + fields + ' FROM modul_edukasi ORDER BY tanggal_dibuat DESC, id DESC')
-  res.json(rows.map(row => ({ ...row, id: String(row.id) })))
+  const [rows] = await pool.query('SELECT ' + fields + ' FROM modul_edukasi modul JOIN kategori_panduan kategori ON kategori.id=modul.kategori_id ORDER BY tanggal_dibuat DESC, modul.id DESC')
+  res.json(rows.map(row => ({ ...row, id: String(row.id), kategoriId: String(row.kategoriId) })))
 }
 
 async function create(req, res) {
   const { values, file } = input(req.body)
   const [result] = await pool.query(
-    'INSERT INTO modul_edukasi (judul, kategori, deskripsi, konten, tanggal_dibuat, file_name, file_data) VALUES (?, ?, ?, ?, CURRENT_DATE(), ?, ?)',
+    'INSERT INTO modul_edukasi (judul, kategori_id, deskripsi, konten, tanggal_dibuat, file_name, file_data) VALUES (?, ?, ?, ?, CURRENT_DATE(), ?, ?)',
     [...values, file?.name ?? null, file?.data ?? null])
   res.status(201).json({ id: result.insertId })
 }
@@ -41,7 +42,7 @@ async function create(req, res) {
 async function update(req, res) {
   const { values, file } = input(req.body)
   const [result] = await pool.query(
-    'UPDATE modul_edukasi SET judul=?, kategori=?, deskripsi=?, konten=?' +
+    'UPDATE modul_edukasi SET judul=?, kategori_id=?, deskripsi=?, konten=?' +
     (file ? ', file_name=?, file_data=?' : '') + ' WHERE id=?',
     [...values, ...(file ? [file.name, file.data] : []), req.params.id])
   if (!result.affectedRows) return res.status(404).json({ message: 'Panduan tidak ditemukan.' })
