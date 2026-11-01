@@ -96,7 +96,7 @@ export default function Ringkasan() {
     .slice(0, 6)
 
   return (
-    <div className="space-y-6">
+    <div className="page-dashboard space-y-6">
       <div>
         <h2 className="text-xl font-semibold text-(--color-foreground)" style={{ fontFamily: 'var(--font-display)' }}>
           Selamat datang, {user?.nama || 'Pengurus'} 👋
@@ -237,3 +237,4 @@ export default function Ringkasan() {
     </div>
   )
 }
+
