@@ -1,10 +1,17 @@
-const router = require('express').Router()
+const express = require('express')
+const router = express.Router()
 const ctrl = require('../controllers/modul.controller')
 const { requireAuth } = require('../middleware/auth')
-
-router.get('/', ctrl.getAll) // publik: boleh dibaca siapa saja
-router.post('/', requireAuth, ctrl.create)
-router.put('/:id', requireAuth, ctrl.update)
-router.delete('/:id', requireAuth, ctrl.remove)
-
+router.use(requireAuth)
+router.use(express.json({ limit: '7mb' }))
+const safe = handler => (req, res, next) => Promise.resolve(handler(req, res)).catch(next)
+router.get('/', safe(ctrl.getAll))
+router.post('/', safe(ctrl.create))
+router.get('/:id/file', safe(ctrl.download))
+router.put('/:id', safe(ctrl.update))
+router.delete('/:id', safe(ctrl.remove))
+router.use((err, req, res, next) => {
+  if (err.status === 400 || err.status === 413) return res.status(err.status).json({ message: err.status === 413 ? 'File maksimal 5 MB.' : err.message })
+  next(err)
+})
 module.exports = router
