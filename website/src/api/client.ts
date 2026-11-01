@@ -1,3 +1,4 @@
+import { transactionFetch } from './transaction'
 // Lapisan koneksi FRONTEND (website) <-> BACKEND (Node/Express).
 // Alamat backend diambil dari .env (VITE_API_URL), TIDAK di-hardcode.
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api'
@@ -26,7 +27,7 @@ export class ApiError extends Error {
 }
 
 // Fungsi inti pemanggil API. Semua request lain di services.ts memakai ini.
-export async function apiFetch<T>(
+async function rawFetch<T>(
   path: string,
   options: { method?: string; body?: unknown; auth?: boolean } = {}
 ): Promise<T> {
@@ -39,6 +40,7 @@ export async function apiFetch<T>(
   }
 
   const res = await fetch(`${API_URL}${path}`, {
+    signal: AbortSignal.timeout(path.startsWith('/modul') ? 120000 : 30000),
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
@@ -72,3 +74,11 @@ export async function apiFetchBlob(path: string): Promise<Blob> {
   return res.blob()
 }
 
+
+
+export function apiFetch<T>(path: string, options: { method?: string; body?: unknown; auth?: boolean } = {}): Promise<T> {
+  if (options.method === 'POST' && ['/setoran', '/penukaran', '/penjualan', '/kas'].includes(path)) {
+    return transactionFetch<T>(`${API_URL}${path}:${options.auth === false ? 'public' : getToken() || 'public'}`, options.body, body => rawFetch<T>(path, { ...options, body }))
+  }
+  return rawFetch<T>(path, options)
+}
