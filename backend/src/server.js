@@ -45,6 +45,7 @@ app.use(cors({
     return callback(new Error('Origin tidak diizinkan oleh CORS'))
   },
 }))
+app.use('/api/modul', modulRoutes)
 app.use(express.json())
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', waktu: new Date().toISOString() }))
@@ -59,7 +60,6 @@ app.use('/api/katalog', katalogRoutes)
 app.use('/api/penukaran', penukaranRoutes)
 app.use('/api/penjualan', penjualanRoutes)
 app.use('/api/kas', kasRoutes)
-app.use('/api/modul', modulRoutes)
 app.use('/api/kampanye', kampanyeRoutes)
 app.use('/api/laporan', laporanRoutes)
 app.use('/api/data', dataRoutes)         // <- endpoint generik untuk ambil data mentah dari tabel MySQL
