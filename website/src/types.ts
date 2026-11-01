@@ -82,6 +82,7 @@ export interface TarifSampah {
 }
 
 export interface Modul {
+  kategoriId: string
   id: string
   judul: string
   kategori: string
@@ -108,4 +109,5 @@ export interface Kampanye {
   kontak: string
   syarat: string
 }
+
 
