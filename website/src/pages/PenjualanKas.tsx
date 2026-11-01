@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Plus, X, Check, TrendingUp, TrendingDown, Leaf } from 'lucide-react'
+import { todayWib } from '../lib/reportPeriod'
 import { formatRupiah, formatTanggal } from '../lib/format'
 import { getPenjualan, createPenjualan, getKas, createKas } from '../api/services'
 import { ApiError } from '../api/client'
@@ -29,14 +30,14 @@ const emptyPenjualan: PenjualanForm = {
   produk: 'Kompos',
   jumlah: 0,
   hargaPerKg: 3000,
-  tanggal: new Date().toISOString().slice(0, 10),
+  tanggal: todayWib(),
 }
 
 const emptyKas: KasForm = {
   keterangan: '',
   jenis: 'masuk',
   jumlah: 0,
-  tanggal: new Date().toISOString().slice(0, 10),
+  tanggal: todayWib(),
 }
 
 export default function PenjualanKas() {
@@ -125,7 +126,7 @@ export default function PenjualanKas() {
             {formatRupiah(totalPenjualan)}
           </div>
           <div className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>
-            {penjualan.length} transaksi · Sep 2026
+            {penjualan.length} transaksi · Seluruh periode
           </div>
         </div>
         <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
@@ -138,7 +139,7 @@ export default function PenjualanKas() {
           <div className="text-2xl font-bold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-success)' }}>
             {formatRupiah(totalMasuk)}
           </div>
-          <div className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>Sep 2026</div>
+          <div className="text-xs mt-1" style={{ color: 'var(--color-muted-foreground)' }}>Seluruh periode</div>
         </div>
         <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-primary)' }}>
           <div className="flex items-center gap-2 mb-2">
@@ -176,7 +177,7 @@ export default function PenjualanKas() {
         <div>
           <div className="flex justify-end mb-4">
             <button
-              onClick={() => setShowPenjualanModal(true)}
+              onClick={() => { setPenjualanForm({ ...emptyPenjualan, tanggal: todayWib() }); setShowPenjualanModal(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
               style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
             >
@@ -240,7 +241,7 @@ export default function PenjualanKas() {
         <div>
           <div className="flex justify-end mb-4">
             <button
-              onClick={() => setShowKasModal(true)}
+              onClick={() => { setKasForm({ ...emptyKas, tanggal: todayWib() }); setShowKasModal(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
               style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
             >
@@ -442,4 +443,5 @@ export default function PenjualanKas() {
     </div>
   )
 }
+
 
