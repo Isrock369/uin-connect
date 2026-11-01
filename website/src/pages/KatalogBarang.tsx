@@ -100,7 +100,7 @@ export default function KatalogBarang() {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="page-catalog space-y-5">
       {errorMsg && (
         <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
           {errorMsg}
@@ -118,7 +118,7 @@ export default function KatalogBarang() {
         </div>
       )}
 
-      <div className="flex items-center justify-between flex-wrap gap-3">
+      <div className="page-toolbar flex items-center justify-between flex-wrap gap-3">
         <div className="flex gap-2 flex-wrap">
           {kategoriList.map((k) => (
             <button
@@ -144,7 +144,7 @@ export default function KatalogBarang() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filtered.map((b) => (
           <div
             key={b.id}
@@ -400,3 +400,4 @@ export default function KatalogBarang() {
     </div>
   )
 }
+
