@@ -28,7 +28,7 @@ const pageTitles: Record<PageId, string> = {
   'kategori-sampah': 'Kategori Sampah',
   'penjualan-kas': 'Penjualan & Kas Pondok',
   laporan: 'Laporan',
-  panduan: 'Panduan & Modul Edukasi',
+  panduan: 'Panduan Pengurus',
   kampanye: 'Campaign Pondok Pesantren',
 }
 
@@ -41,7 +41,7 @@ const pageSubtitles: Record<PageId, string> = {
   'kategori-sampah': 'Kelola jenis sampah dan poin per kg — tambah, ubah, atau hapus sesuai kebutuhan',
   'penjualan-kas': 'Catat penjualan organik dan kas pondok',
   laporan: 'Ringkasan data dan analitik periode',
-  panduan: 'Modul edukasi cara pilah, cara setor, dan pengolahan sampah',
+  panduan: 'Panduan kerja dan dokumen untuk pengurus sampah pesantren',
   kampanye: 'Program kerjasama dan reward dari instansi eksternal',
 }
 
@@ -202,3 +202,4 @@ export default function App() {
     </AuthProvider>
   )
 }
+
