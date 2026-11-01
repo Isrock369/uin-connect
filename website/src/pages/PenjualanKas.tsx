@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { Plus, X, Check, TrendingUp, TrendingDown, Leaf } from 'lucide-react'
 import { todayWib } from '../lib/reportPeriod'
 import { formatRupiah, formatTanggal } from '../lib/format'
@@ -66,8 +66,14 @@ export default function PenjualanKas() {
   const totalMasuk = kas.filter((t) => t.jenis === 'masuk').reduce((s, t) => s + t.jumlah, 0)
   const totalKeluar = kas.filter((t) => t.jenis === 'keluar').reduce((s, t) => s + t.jumlah, 0)
 
+  const addPenjualanLock = useRef(false)
+  const [addPenjualanBusy, setAddPenjualanBusy] = useState(false)
+
   async function addPenjualan() {
+    if (addPenjualanLock.current) return
     if (!penjualanForm.pembeli || penjualanForm.jumlah <= 0) return
+    addPenjualanLock.current = true
+    setAddPenjualanBusy(true)
     setErrorMsg(null)
     try {
       await createPenjualan(penjualanForm)
@@ -76,11 +82,20 @@ export default function PenjualanKas() {
       loadAll()
     } catch (e) {
       setErrorMsg(e instanceof ApiError ? e.message : 'Gagal mencatat penjualan.')
+    } finally {
+      addPenjualanLock.current = false
+      setAddPenjualanBusy(false)
     }
   }
 
+  const addKasLock = useRef(false)
+  const [addKasBusy, setAddKasBusy] = useState(false)
+
   async function addKas() {
+    if (addKasLock.current) return
     if (!kasForm.keterangan || kasForm.jumlah <= 0) return
+    addKasLock.current = true
+    setAddKasBusy(true)
     setErrorMsg(null)
     try {
       await createKas(kasForm)
@@ -89,6 +104,9 @@ export default function PenjualanKas() {
       loadAll()
     } catch (e) {
       setErrorMsg(e instanceof ApiError ? e.message : 'Gagal mencatat transaksi kas.')
+    } finally {
+      addKasLock.current = false
+      setAddKasBusy(false)
     }
   }
 
@@ -367,6 +385,7 @@ export default function PenjualanKas() {
                 className="px-4 py-2 rounded-xl text-sm font-medium hover:opacity-80"
                 style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}>Batal</button>
               <button onClick={addPenjualan}
+                disabled={addPenjualanBusy}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80"
                 style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}>
                 <Check size={14} />Simpan
@@ -432,6 +451,7 @@ export default function PenjualanKas() {
                 className="px-4 py-2 rounded-xl text-sm font-medium hover:opacity-80"
                 style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}>Batal</button>
               <button onClick={addKas}
+                disabled={addKasBusy}
                 className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80"
                 style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}>
                 <Check size={14} />Simpan
@@ -443,5 +463,6 @@ export default function PenjualanKas() {
     </div>
   )
 }
+
 
 
