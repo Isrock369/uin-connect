@@ -1,3 +1,4 @@
+const { todayWib } = require('../utils/businessDate')
 const { pool } = require('../config/db')
 
 // Batas berat per setoran, sama dengan batas yang dipakai endpoint timbangan.
@@ -42,7 +43,7 @@ async function create(req, res) {
   if (tarifRows.length === 0) return res.status(404).json({ message: 'Jenis sampah tidak ditemukan.' })
 
   const poin = Math.round(tarifRows[0].poinPerKg * Number(berat))
-  const tanggal = new Date().toISOString().slice(0, 10)
+  const tanggal = todayWib()
 
   const [result] = await pool.query(
     `INSERT INTO setoran (kamar_id, tarif_sampah_id, piket, tanggal, berat_kg, poin, status)
