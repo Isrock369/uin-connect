@@ -142,12 +142,10 @@ export interface ModulInput {
   kategori: string
   deskripsi: string
   konten: string
-  durasi: number
-  status: Modul['status']
-  icon: string
+  file?: { name: string; data: string } | null
 }
 export function getModul() {
-  return apiFetch<Modul[]>('/modul', { auth: false })
+  return apiFetch<Modul[]>('/modul')
 }
 export function createModul(data: ModulInput) {
   return apiFetch<{ id: number }>('/modul', { method: 'POST', body: data })
@@ -184,3 +182,8 @@ export interface Ringkasan {
 export function getRingkasan() {
   return apiFetch<Ringkasan>('/laporan/ringkasan')
 }
+
+export function getModulFile(id: string) {
+  return apiFetchBlob(`/modul/${id}/file`)
+}
+
