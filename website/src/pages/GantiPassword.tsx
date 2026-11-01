@@ -45,7 +45,7 @@ export default function GantiPassword() {
   }
 
   return (
-    <section className="max-w-lg rounded-2xl border p-5 sm:p-6" style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}>
+    <section className="page-security max-w-lg rounded-2xl border p-5 sm:p-6" style={{ background: 'var(--color-card)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}>
       <h2 className="text-lg font-semibold">Ganti Password</h2>
       {success ? (
         <div className="mt-4 space-y-4">
@@ -75,3 +75,4 @@ export default function GantiPassword() {
     </section>
   )
 }
+
