@@ -10,12 +10,25 @@ const { pool } = require('../config/db')
 //                        GET  /api/kamera/foto/:id     (login)   gambar JPEG-nya
 // Kunci perangkat memakai TIMBANGAN_KEY yang sama dengan timbangan.
 
-const TUGAS_KADALUARSA_MS = 30000 // tugas foto dibatalkan kalau kamera tidak mengambilnya
-const KAMERA_ONLINE_MS = 6000     // kamera dianggap offline kalau tidak menanyakan tugas selama ini
-const SETORAN_BARU_MENIT = 3      // hanya setoran yang baru dibuat yang boleh diminta fotonya
+const { lockDevice, enqueue } = require('../utils/cameraQueue')
+const { InputError } = require('../utils/transaction')
 
-let tugas = null        // { setoranId, dibuatPada, diambil }
-let terakhirLihat = 0   // kapan kamera terakhir menanyakan tugas
+async function cameraTransaction(res, action) {
+  let conn
+  try {
+    await pastikanTabel()
+    conn = await pool.getConnection()
+    await conn.beginTransaction()
+    const result = await action(conn)
+    await conn.commit()
+    res.set('Cache-Control', 'no-store')
+    return res.json(result)
+  } catch (e) {
+    if (conn) await conn.rollback().catch(() => {})
+    console.error('Kamera:', e.code || e.message)
+    return res.status(e instanceof InputError ? e.status : 500).json({ message: e instanceof InputError ? e.message : 'Gagal memproses kamera.' })
+  } finally { if (conn) conn.release() }
+}
 
 function kunciCocok(dikirim) {
   const kunci = process.env.TIMBANGAN_KEY || ''
@@ -39,8 +52,9 @@ function cekPerangkat(req, res) {
 }
 
 function ambilId(nilai) {
-  const id = Number.parseInt(nilai, 10)
-  return Number.isInteger(id) && id > 0 ? id : null
+  if (!['number', 'string'].includes(typeof nilai) || !/^[1-9][0-9]*$/.test(String(nilai))) return null
+  const id = Number(nilai)
+  return Number.isSafeInteger(id) && id <= 4294967295 ? id : null
 }
 
 // Tabel foto dibuat otomatis, jadi tidak perlu menjalankan SQL manual.
@@ -53,16 +67,11 @@ function pastikanTabel() {
       ukuran     INT UNSIGNED NOT NULL,
       created_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP`
     tabelSiap = (async () => {
-      try {
-        await pool.query(
-          `CREATE TABLE IF NOT EXISTS setoran_foto (${kolom},
-             CONSTRAINT fk_foto_setoran FOREIGN KEY (setoran_id) REFERENCES setoran(id)
-               ON UPDATE CASCADE ON DELETE CASCADE) ENGINE=InnoDB`
-        )
-      } catch (err) {
-        console.warn('Tabel setoran_foto dibuat tanpa foreign key:', err.message)
-        await pool.query(`CREATE TABLE IF NOT EXISTS setoran_foto (${kolom}) ENGINE=InnoDB`)
-      }
+      await pool.query(
+        `CREATE TABLE IF NOT EXISTS setoran_foto (${kolom},
+          CONSTRAINT fk_foto_setoran FOREIGN KEY (setoran_id) REFERENCES setoran(id)
+          ON UPDATE CASCADE ON DELETE CASCADE) ENGINE=InnoDB`
+      )
     })()
     tabelSiap.catch(() => { tabelSiap = null }) // gagal -> coba lagi di permintaan berikutnya
   }
@@ -72,73 +81,42 @@ function pastikanTabel() {
 // POST /api/kamera/minta  (PUBLIK — dipanggil Portal Santri setelah setoran tercatat)
 // Body: { setoranId }   Response: { kameraOnline }
 async function minta(req, res) {
-  try {
-    const id = ambilId(req.body?.setoranId)
-    if (!id) return res.status(400).json({ message: 'setoranId tidak valid.' })
-
-    const [rows] = await pool.query(
-      `SELECT id FROM setoran
-        WHERE id = ? AND status = 'menunggu'
-          AND created_at >= NOW() - INTERVAL ${SETORAN_BARU_MENIT} MINUTE`,
-      [id]
-    )
-    if (rows.length === 0) {
-      return res.status(404).json({ message: 'Setoran tidak ditemukan atau sudah lama.' })
-    }
-
-    const kameraOnline = Date.now() - terakhirLihat < KAMERA_ONLINE_MS
-    if (kameraOnline) tugas = { setoranId: id, dibuatPada: Date.now(), diambil: false }
-
-    res.set('Cache-Control', 'no-store')
-    res.json({ kameraOnline })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Gagal meminta foto.' })
-  }
+  const id = ambilId(req.body?.setoranId)
+  if (!id) return res.status(400).json({ message: 'setoranId tidak valid.' })
+  return cameraTransaction(res, conn => enqueue(conn, id))
 }
 
-// GET /api/kamera/tugas  (khusus ESP32-CAM — wajib header X-Device-Key)
-// Response: { ada: false }  atau  { ada: true, setoranId: 12 }
-function tugasUntukKamera(req, res) {
+async function tugasUntukKamera(req, res) {
   if (!cekPerangkat(req, res)) return
-  terakhirLihat = Date.now()
-
-  res.set('Cache-Control', 'no-store')
-  if (tugas && Date.now() - tugas.dibuatPada > TUGAS_KADALUARSA_MS) tugas = null
-  if (tugas && !tugas.diambil) {
-    tugas.diambil = true // satu tugas hanya diberikan sekali
-    return res.json({ ada: true, setoranId: tugas.setoranId })
-  }
-  res.json({ ada: false })
+  return cameraTransaction(res, async conn => {
+    await lockDevice(conn)
+    await conn.query('UPDATE camera_device SET last_seen = NOW(3) WHERE id = 1')
+    const [[busy]] = await conn.query("SELECT setoran_id FROM camera_jobs WHERE status = 'claimed' LIMIT 1")
+    if (busy) return { ada: false }
+    const [[job]] = await conn.query("SELECT setoran_id FROM camera_jobs WHERE status = 'pending' ORDER BY created_at, setoran_id LIMIT 1 FOR UPDATE")
+    if (!job) return { ada: false }
+    await conn.query("UPDATE camera_jobs SET status = 'claimed', lease_until = NOW(3) + INTERVAL 60 SECOND WHERE setoran_id = ?", [job.setoran_id])
+    return { ada: true, setoranId: job.setoran_id }
+  })
 }
 
-// POST /api/kamera/foto?setoranId=12  (khusus ESP32-CAM — body: JPEG mentah)
 async function terimaFoto(req, res) {
   if (!cekPerangkat(req, res)) return
-  try {
-    const id = ambilId(req.query.setoranId)
-    if (!id) return res.status(400).json({ message: 'setoranId tidak valid.' })
-
-    const foto = req.body
-    const jpegValid = Buffer.isBuffer(foto) && foto.length > 100 && foto[0] === 0xff && foto[1] === 0xd8
-    if (!jpegValid) return res.status(400).json({ message: 'Body harus berupa gambar JPEG.' })
-
-    await pastikanTabel()
-    const [rows] = await pool.query('SELECT id FROM setoran WHERE id = ?', [id])
-    if (rows.length === 0) return res.status(404).json({ message: 'Setoran tidak ditemukan.' })
-
-    await pool.query(
-      `INSERT INTO setoran_foto (setoran_id, foto, ukuran) VALUES (?, ?, ?)
-       ON DUPLICATE KEY UPDATE foto = VALUES(foto), ukuran = VALUES(ukuran), created_at = NOW()`,
-      [id, foto, foto.length]
-    )
-    if (tugas && tugas.setoranId === id) tugas = null
-
-    res.json({ ok: true, ukuran: foto.length })
-  } catch (err) {
-    console.error(err)
-    res.status(500).json({ message: 'Gagal menyimpan foto.' })
+  const id = ambilId(req.query.setoranId)
+  if (!id) return res.status(400).json({ message: 'setoranId tidak valid.' })
+  const foto = req.body
+  if (!Buffer.isBuffer(foto) || foto.length <= 100 || foto.length > 600 * 1024 || foto[0] !== 0xff || foto[1] !== 0xd8 || foto[foto.length - 2] !== 0xff || foto[foto.length - 1] !== 0xd9) {
+    return res.status(400).json({ message: 'Body harus JPEG utuh, maksimal 600 KB.' })
   }
+  return cameraTransaction(res, async conn => {
+    await lockDevice(conn)
+    const [[job]] = await conn.query('SELECT status FROM camera_jobs WHERE setoran_id = ?', [id])
+    if (job?.status === 'done') return { ok: true } // retry JPEG tidak menimpa foto bukti
+    if (job?.status !== 'claimed') throw new InputError('Tugas foto tidak aktif atau sudah kedaluwarsa.', 409)
+    await conn.query('INSERT INTO setoran_foto (setoran_id, foto, ukuran) VALUES (?, ?, ?)', [id, foto, foto.length])
+    await conn.query("UPDATE camera_jobs SET status = 'done' WHERE setoran_id = ?", [id])
+    return { ok: true, ukuran: foto.length }
+  })
 }
 
 // GET /api/kamera/hasil/:setoranId  (PUBLIK — Portal menunggu foto masuk)
@@ -154,7 +132,11 @@ async function hasil(req, res) {
       [id]
     )
     res.set('Cache-Control', 'no-store')
-    res.json({ ada: rows.length > 0 })
+    const [[job]] = await pool.query(`SELECT CASE
+      WHEN status = 'pending' AND expires_at <= NOW(3) THEN 'expired'
+      WHEN status = 'claimed' AND lease_until <= NOW(3) THEN 'expired'
+      ELSE status END AS status FROM camera_jobs WHERE setoran_id = ?`, [id])
+    res.json({ ada: rows.length > 0, status: rows.length ? 'done' : (job?.status || 'none') })
   } catch (err) {
     console.error(err)
     res.status(500).json({ message: 'Gagal memeriksa foto.' })
