@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Download, BarChart3 } from 'lucide-react'
+import { reportRange, inRange, formatReportDate, cashSummary, setoranForReport } from '../lib/reportPeriod'
 import { formatRupiah } from '../lib/format'
 import { getKamar, getSetoran, getPenukaran, getPenjualan, getKas, getTarifSampah } from '../api/services'
 import { ApiError } from '../api/client'
@@ -41,47 +42,54 @@ export default function Laporan() {
   const [period, setPeriod] = useState<PeriodId>('bulan')
 
   const [kamarData, setKamarData] = useState<Kamar[]>([])
-  const [setoranData, setSetoranData] = useState<Setoran[]>([])
-  const [penukaranData, setPenukaranData] = useState<Penukaran[]>([])
-  const [penjualanData, setPenjualanData] = useState<PenjualanOrganik[]>([])
-  const [kasData, setKasData] = useState<TransaksiKas[]>([])
+  const [allSetoranData, setSetoranData] = useState<Setoran[]>([])
+  const [allPenukaranData, setPenukaranData] = useState<Penukaran[]>([])
+  const [allPenjualanData, setPenjualanData] = useState<PenjualanOrganik[]>([])
+  const [allKasData, setKasData] = useState<TransaksiKas[]>([])
   const [tarifSampah, setTarifSampah] = useState<TarifSampah[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  useEffect(() => {
+  function loadReport() {
+    setLoading(true)
+    setErrorMsg(null)
     Promise.all([getKamar(), getSetoran(), getPenukaran(), getPenjualan(), getKas(), getTarifSampah()])
       .then(([k, s, p, j, ks, t]) => {
         setKamarData(k); setSetoranData(s); setPenukaranData(p); setPenjualanData(j); setKasData(ks); setTarifSampah(t)
       })
       .catch((e) => setErrorMsg(e instanceof ApiError ? e.message : 'Gagal memuat data laporan.'))
       .finally(() => setLoading(false))
-  }, [])
+  }
+
+  useEffect(loadReport, [])
 
   if (loading) {
     return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Memuat laporan...</p>
   }
   if (errorMsg) {
-    return <p className="text-sm" style={{ color: 'var(--color-error)' }}>{errorMsg}</p>
+    return <div role="alert" className="space-y-3"><p style={{ color: 'var(--color-error)' }}>{errorMsg}</p><button className="rounded-xl border border-(--color-border) px-4 py-2" onClick={loadReport}>Coba lagi</button></div>
   }
-  if (kamarData.length === 0) {
-    return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada data untuk dilaporkan.</p>
-  }
+
+  const range = reportRange(period)
+  const rangeLabel = `${formatReportDate(range.start)} – ${formatReportDate(range.end)}`
+  const { approved: setoranData, pending: menunggu } = setoranForReport(allSetoranData, range)
+  const penukaranData = allPenukaranData.filter(row => inRange(row.tanggal, range))
+  const penjualanData = allPenjualanData.filter(row => inRange(row.tanggal, range))
+  const cash = cashSummary(allKasData, range)
+  const kasData = cash.rows
 
   // Catatan: MySQL (driver mysql2) sering mengembalikan kolom DECIMAL/FLOAT sebagai string,
   // bukan number. Semua akumulasi angka di bawah ini dibungkus Number(...) supaya aman
   // dipakai dengan .toFixed() dan operasi aritmetika lain.
 
   const sortedKamar = [...kamarData].sort((a, b) => Number(b.poin) - Number(a.poin))
-  const maxPoin = Number(sortedKamar[0].poin)
+  const maxPoin = Number(sortedKamar[0]?.poin ?? 0)
 
   const jenisTotals: Record<string, number> = {}
-  setoranData
-    .filter((s) => s.status !== 'ditolak')
-    .forEach((s) => {
+  setoranData.forEach((s) => {
       jenisTotals[s.jenisSampah] = (jenisTotals[s.jenisSampah] ?? 0) + Number(s.berat)
     })
-  const maxBerat = Math.max(...Object.values(jenisTotals))
+  const maxBerat = Math.max(0, ...Object.values(jenisTotals))
 
   const totalBerat = Object.values(jenisTotals).reduce((a, b) => a + b, 0)
   const organikBerat = penjualanData.reduce((s, p) => s + Number(p.jumlah), 0)
@@ -89,9 +97,9 @@ export default function Laporan() {
   const poinDigunakan = penukaranData.reduce((s, p) => s + Number(p.poinDigunakan), 0)
   const poinBeredar = kamarData.reduce((s, k) => s + Number(k.poin), 0)
 
-  const kasTotal = kasData.reduce((acc, t) => (t.jenis === 'masuk' ? acc + Number(t.jumlah) : acc - Number(t.jumlah)), 0)
-  const kasIn = kasData.filter((t) => t.jenis === 'masuk').reduce((s, t) => s + Number(t.jumlah), 0)
-  const kasOut = kasData.filter((t) => t.jenis === 'keluar').reduce((s, t) => s + Number(t.jumlah), 0)
+  const kasTotal = cash.closing
+  const kasIn = cash.income
+  const kasOut = cash.expense
 
   const barangFreq: Record<string, { nama: string; jumlah: number; poin: number }> = {}
   penukaranData.forEach((p) => {
@@ -99,7 +107,7 @@ export default function Laporan() {
     barangFreq[p.barangId].jumlah += Number(p.jumlah)
     barangFreq[p.barangId].poin += Number(p.poinDigunakan)
   })
-  const topBarang = Object.values(barangFreq).sort((a, b) => b.poin - a.poin)
+  const topBarang = Object.values(barangFreq).sort((a, b) => b.jumlah - a.jumlah)
 
   const jenisByKategori: Record<string, number> = {}
   Object.entries(jenisTotals).forEach(([jenis, berat]) => {
@@ -123,6 +131,7 @@ export default function Laporan() {
           {(['minggu', 'bulan'] as PeriodId[]).map((p) => (
             <button
               key={p}
+              aria-pressed={period === p}
               onClick={() => setPeriod(p)}
               className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
               style={{
@@ -140,12 +149,20 @@ export default function Laporan() {
           style={{ color: 'var(--color-foreground)', background: 'var(--color-card)' }}
         >
           <Download size={14} />
-          Ekspor PDF
+          Cetak / Simpan PDF
         </button>
       </div>
 
+      <div className="rounded-xl border border-(--color-border) p-3 text-sm space-y-1">
+        <p className="font-semibold">{rangeLabel} (WIB)</p>
+        <p>Minggu dihitung mulai Senin. Transaksi dihitung berdasarkan tanggal transaksi sampai hari ini.</p>
+        <p>Sampah hanya menghitung setoran disetujui. {menunggu.length} setoran masih menunggu ({menunggu.reduce((sum, row) => sum + Number(row.berat), 0).toFixed(1)} kg), belum masuk total.</p>
+        <p>Saldo poin kamar adalah saldo saat data dimuat, bukan perolehan poin periode.</p>
+      </div>
+
       <h2 className="hidden print:block text-lg font-semibold" style={{ color: 'var(--color-foreground)' }}>
-        Laporan MIU Connect — {period === 'minggu' ? 'Minggu Ini' : 'Bulan Ini'}
+        Laporan MIU Connect — {rangeLabel}
+        <span className="block text-sm">{activeTab === 'poin' ? 'Poin & Distribusi Barang' : activeTab === 'sampah' ? 'Sampah per Kategori' : 'Keuangan & Kas'}</span>
       </h2>
 
       <div className="no-print flex gap-2 border-b border-(--color-border)">
@@ -172,9 +189,10 @@ export default function Laporan() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
             <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
-              Saldo Poin per Kamar
+              Saldo Poin per Kamar Saat Ini
             </h3>
             <div className="space-y-3">
+              {sortedKamar.length === 0 && <p className="text-sm">Belum ada kamar terdaftar.</p>}
               {sortedKamar.map((k) => (
                 <BarRow
                   key={k.id}
@@ -195,9 +213,9 @@ export default function Laporan() {
               </h3>
               <div className="space-y-3">
                 {[
-                  { label: 'Total Poin Beredar', value: poinBeredar.toLocaleString('id-ID'), unit: 'poin' },
-                  { label: 'Poin Telah Ditukar', value: poinDigunakan.toLocaleString('id-ID'), unit: 'poin' },
-                  { label: 'Total Kamar Aktif', value: '8', unit: 'kamar' },
+                  { label: 'Saldo Poin Saat Ini', value: poinBeredar.toLocaleString('id-ID'), unit: 'poin' },
+                  { label: 'Poin Ditukar dalam Periode', value: poinDigunakan.toLocaleString('id-ID'), unit: 'poin' },
+                  { label: 'Kamar Terdaftar', value: String(kamarData.length), unit: 'kamar' },
                   { label: 'Penukaran Dilakukan', value: String(penukaranData.length), unit: 'kali' },
                 ].map((stat) => (
                   <div key={stat.label} className="flex justify-between text-sm">
@@ -215,6 +233,7 @@ export default function Laporan() {
                 Barang Paling Sering Ditukar
               </h3>
               <div className="space-y-2.5">
+                {topBarang.length === 0 && <p className="text-sm">Belum ada penukaran pada periode ini.</p>}
                 {topBarang.map((b, i) => (
                   <div key={b.nama} className="flex items-center gap-2 text-sm">
                     <span
@@ -225,7 +244,7 @@ export default function Laporan() {
                     </span>
                     <span className="flex-1 truncate" style={{ color: 'var(--color-foreground)' }}>{b.nama}</span>
                     <span className="text-xs font-semibold" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-accent)' }}>
-                      -{b.poin} pt
+                      {b.jumlah} barang · {b.poin} pt
                     </span>
                   </div>
                 ))}
@@ -239,9 +258,10 @@ export default function Laporan() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
             <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
-              Berat per Jenis Sampah Anorganik
+              Berat Setoran Disetujui per Jenis Sampah
             </h3>
             <div className="space-y-3">
+              {setoranData.length === 0 && <p className="text-sm">Belum ada setoran disetujui pada periode ini.</p>}
               {Object.entries(jenisTotals)
                 .sort(([, a], [, b]) => b - a)
                 .map(([jenis, berat]) => {
@@ -281,13 +301,12 @@ export default function Laporan() {
 
             <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-3" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
-                Dampak Lingkungan
+                Ringkasan Pengelolaan Sampah
               </h3>
               <div className="space-y-2.5">
                 {[
-                  { label: 'Total anorganik disetor', value: `${totalBerat.toFixed(1)} kg` },
-                  { label: 'Organik diolah & dijual', value: `${organikBerat} kg` },
-                  { label: 'Sampah tidak ke TPA', value: `~${(totalBerat + organikBerat).toFixed(0)} kg` },
+                  { label: 'Berat setoran disetujui', value: `${totalBerat.toFixed(1)} kg` },
+                  { label: 'Produk organik terjual', value: `${organikBerat} kg` },
                   { label: 'Setoran diproses', value: `${setoranData.filter((s) => s.status === 'disetujui').length} transaksi` },
                 ].map((item) => (
                   <div key={item.label} className="flex justify-between text-sm">
@@ -307,10 +326,11 @@ export default function Laporan() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
             <h3 className="text-base font-semibold mb-5" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
-              Laporan Kas Pondok — September 2026
+              Laporan Kas Pondok — {rangeLabel}
             </h3>
             <div className="space-y-3">
               {[
+                { label: 'Saldo Awal Periode', value: formatRupiah(cash.opening), color: 'var(--color-primary)' },
                 { label: 'Total Pemasukan', value: formatRupiah(kasIn), color: 'var(--color-success)' },
                 { label: 'Total Pengeluaran', value: formatRupiah(kasOut), color: 'var(--color-error)' },
                 { label: 'Saldo Akhir', value: formatRupiah(kasTotal), color: 'var(--color-primary)', bold: true },
@@ -358,7 +378,8 @@ export default function Laporan() {
               <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Penjualan per Produk Organik
               </h3>
-              {['Kompos', 'Pakan Maggot'].map((produk) => {
+              {penjualanData.length === 0 && <p className="text-sm">Belum ada penjualan pada periode ini.</p>}
+              {Array.from(new Set(penjualanData.map(row => row.produk))).sort().map((produk) => {
                 const data = penjualanData.filter((p) => p.produk === produk)
                 const totalKg = data.reduce((s, p) => s + Number(p.jumlah), 0)
                 const totalRp = data.reduce((s, p) => s + Number(p.total), 0)
@@ -385,8 +406,8 @@ export default function Laporan() {
               </h3>
               <div className="space-y-2">
                 {[
-                  { pct: Math.round((kasIn / (kasIn + kasOut)) * 100), label: 'Masuk', color: 'var(--color-success)', value: formatRupiah(kasIn) },
-                  { pct: Math.round((kasOut / (kasIn + kasOut)) * 100), label: 'Keluar', color: 'var(--color-error)', value: formatRupiah(kasOut) },
+                  { pct: kasIn + kasOut > 0 ? Math.round((kasIn / (kasIn + kasOut)) * 100) : 0, label: 'Masuk', color: 'var(--color-success)', value: formatRupiah(kasIn) },
+                  { pct: kasIn + kasOut > 0 ? Math.round((kasOut / (kasIn + kasOut)) * 100) : 0, label: 'Keluar', color: 'var(--color-error)', value: formatRupiah(kasOut) },
                 ].map((item) => (
                   <div key={item.label}>
                     <div className="flex justify-between text-xs mb-1">
@@ -413,4 +434,5 @@ export default function Laporan() {
     </div>
   )
 }
+
 
