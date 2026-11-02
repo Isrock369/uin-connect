@@ -1,3 +1,4 @@
+import DataToolbar, { matchesSearch } from '../components/DataToolbar'
 import { useEffect, useState, useRef } from 'react'
 import { Plus, X, Check, TrendingUp, TrendingDown, Leaf } from 'lucide-react'
 import { todayWib } from '../lib/reportPeriod'
@@ -41,6 +42,8 @@ const emptyKas: KasForm = {
 }
 
 export default function PenjualanKas() {
+  const [query, setQuery] = useState('')
+  const [kindFilter, setKindFilter] = useState('')
   const [activeTab, setActiveTab] = useState<TabId>('penjualan')
   const [penjualan, setPenjualan] = useState<PenjualanOrganik[]>([])
   const [kas, setKas] = useState<TransaksiKas[]>([])
@@ -121,6 +124,8 @@ export default function PenjualanKas() {
     return { ...t, saldo: bal }
   })
 
+  const visiblePenjualan = penjualan.filter(item => (!kindFilter || item.produk === kindFilter) && matchesSearch(query, item.pembeli, item.produk, item.tanggal))
+  const visibleKas = kasWithBalance.filter(item => (!kindFilter || item.jenis === kindFilter) && matchesSearch(query, item.keterangan, item.jenis, item.tanggal))
   if (loading) {
     return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Memuat data penjualan & kas...</p>
   }
@@ -179,7 +184,7 @@ export default function PenjualanKas() {
         {(['penjualan', 'kas'] as TabId[]).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => { setActiveTab(tab); setQuery(''); setKindFilter('') }}
             className="px-4 py-2.5 text-sm font-semibold transition-all border-b-2 -mb-px"
             style={{
               borderColor: activeTab === tab ? 'var(--color-primary)' : 'transparent',
@@ -193,7 +198,7 @@ export default function PenjualanKas() {
 
       {activeTab === 'penjualan' && (
         <div>
-          <div className="flex justify-end mb-4">
+          <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari pembeli, produk, atau tanggal..." filter={kindFilter} onFilterChange={setKindFilter} filterLabel="Produk" options={[{ value: '', label: 'Semua produk' }, ...Array.from(new Set(penjualan.map(item => item.produk))).sort().map(value => ({ value, label: value }))]} count={visiblePenjualan.length} total={penjualan.length}>
             <button
               onClick={() => { setPenjualanForm({ ...emptyPenjualan, tanggal: todayWib() }); setShowPenjualanModal(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
@@ -202,7 +207,7 @@ export default function PenjualanKas() {
               <Plus size={15} />
               Catat Penjualan
             </button>
-          </div>
+          </DataToolbar><p className="my-3 text-xs text-(--color-muted-foreground)">Pencarian menyaring daftar; ringkasan dan saldo tetap mencakup seluruh transaksi.</p>
 
           <div className="rounded-2xl border border-(--color-border) overflow-hidden" style={{ background: 'var(--color-card)' }}>
             <div className="overflow-x-auto">
@@ -217,7 +222,8 @@ export default function PenjualanKas() {
                 </tr>
               </thead>
               <tbody>
-                {[...penjualan]
+                {visiblePenjualan.length === 0 && <tr><td colSpan={6} className="p-6 text-center">Tidak ada penjualan yang cocok.</td></tr>}
+                {[...visiblePenjualan]
                   .sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
                   .map((p) => (
                     <tr key={p.id} className="border-t border-(--color-border) hover:bg-(--color-muted)/30 transition-colors">
@@ -257,7 +263,7 @@ export default function PenjualanKas() {
 
       {activeTab === 'kas' && (
         <div>
-          <div className="flex justify-end mb-4">
+          <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari keterangan atau tanggal..." filter={kindFilter} onFilterChange={setKindFilter} filterLabel="Jenis transaksi" options={[{ value: '', label: 'Semua transaksi' }, { value: 'masuk', label: 'Pemasukan' }, { value: 'keluar', label: 'Pengeluaran' }]} count={visibleKas.length} total={kas.length}>
             <button
               onClick={() => { setKasForm({ ...emptyKas, tanggal: todayWib() }); setShowKasModal(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
@@ -266,7 +272,7 @@ export default function PenjualanKas() {
               <Plus size={15} />
               Catat Transaksi
             </button>
-          </div>
+          </DataToolbar><p className="my-3 text-xs text-(--color-muted-foreground)">Pencarian menyaring daftar; ringkasan dan saldo tetap mencakup seluruh transaksi.</p>
 
           <div className="rounded-2xl border border-(--color-border) overflow-hidden" style={{ background: 'var(--color-card)' }}>
             <div className="overflow-x-auto">
@@ -281,7 +287,8 @@ export default function PenjualanKas() {
                 </tr>
               </thead>
               <tbody>
-                {kasWithBalance.map((t) => (
+                {visibleKas.length === 0 && <tr><td colSpan={5} className="p-6 text-center">Tidak ada transaksi yang cocok.</td></tr>}
+                {visibleKas.map((t) => (
                   <tr key={t.id} className="border-t border-(--color-border) hover:bg-(--color-muted)/30 transition-colors">
                     <td className="px-4 py-3 text-xs" style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-muted-foreground)' }}>
                       {formatTanggal(t.tanggal)}
@@ -463,6 +470,7 @@ export default function PenjualanKas() {
     </div>
   )
 }
+
 
 
 
