@@ -1,3 +1,4 @@
+import DataToolbar, { matchesSearch } from '../components/DataToolbar'
 import { useEffect, useState } from 'react'
 import { Plus, X, Check, Pencil, Trash2, Calendar, Phone, AlertCircle, Megaphone } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
@@ -48,6 +49,7 @@ const inputStyle: React.CSSProperties = {
 }
 
 export default function Kampanye() {
+  const [query, setQuery] = useState('')
   const [kampanye, setKampanye] = useState<Kampanye[]>([])
   const [tarifSampah, setTarifSampah] = useState<TarifSampah[]>([])
   const [loading, setLoading] = useState(true)
@@ -69,7 +71,7 @@ export default function Kampanye() {
 
   useEffect(loadAll, [])
 
-  const filtered = filterStatus === 'semua' ? kampanye : kampanye.filter((k) => k.status === filterStatus)
+  const filtered = kampanye.filter((k) => (filterStatus === 'semua' || k.status === filterStatus) && matchesSearch(query, k.judulKampanye, k.mitra, k.deskripsi, k.jenisSampah.join(' ')))
   const aktif = kampanye.filter((k) => k.status === 'aktif').length
   const mendatang = kampanye.filter((k) => k.status === 'mendatang').length
 
@@ -182,22 +184,7 @@ export default function Kampanye() {
       )}
 
       {/* Filter + Add */}
-      <div className="page-toolbar flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex gap-2">
-          {(['semua', 'aktif', 'mendatang', 'selesai'] as const).map((s) => (
-            <button
-              key={s}
-              onClick={() => setFilterStatus(s)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all capitalize"
-              style={{
-                background: filterStatus === s ? 'var(--color-primary)' : 'var(--color-muted)',
-                color: filterStatus === s ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
-              }}
-            >
-              {s === 'semua' ? 'Semua' : statusConfig[s as StatusKampanye].label}
-            </button>
-          ))}
-        </div>
+      <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari campaign atau mitra..." filter={filterStatus} onFilterChange={value => setFilterStatus(value as typeof filterStatus)} filterLabel="Status" options={['semua', 'aktif', 'mendatang', 'selesai'].map(value => ({ value, label: value === 'semua' ? 'Semua status' : value.charAt(0).toUpperCase() + value.slice(1) }))} count={filtered.length} total={kampanye.length}>
         <button
           onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity shrink-0"
@@ -206,7 +193,7 @@ export default function Kampanye() {
           <Plus size={15} />
           Tambah Kampanye
         </button>
-      </div>
+      </DataToolbar>
 
       {/* Campaign cards */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -644,5 +631,6 @@ export default function Kampanye() {
     </div>
   )
 }
+
 
 
