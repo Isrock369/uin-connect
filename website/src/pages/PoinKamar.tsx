@@ -1,3 +1,4 @@
+import DataToolbar, { matchesSearch } from '../components/DataToolbar'
 import { useEffect, useState, useRef } from 'react'
 import { Gift, ChevronDown, Trophy, X, Check, Plus, Pencil, Trash2, Users, Settings } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
@@ -24,6 +25,8 @@ const inputStyle: React.CSSProperties = {
 }
 
 export default function PoinKamar() {
+  const [query, setQuery] = useState('')
+  const [asramaFilter, setAsramaFilter] = useState('')
   const [kamar, setKamar] = useState<Kamar[]>([])
   const [asramaList, setAsramaList] = useState<Asrama[]>([])
   const [setoranData, setSetoranData] = useState<Setoran[]>([])
@@ -65,6 +68,7 @@ export default function PoinKamar() {
 
   useEffect(loadAll, [])
 
+  const visibleKamar = kamar.filter(item => (!asramaFilter || item.asrama === asramaFilter) && matchesSearch(query, item.nama, item.asrama))
   const sorted = [...kamar].sort((a, b) => b.poin - a.poin)
 
   // ── Kamar CRUD ─────────────────────────────────────────────────────────────
@@ -235,13 +239,7 @@ export default function PoinKamar() {
       </div>
 
       {/* ── Table header ── */}
-      <div className="page-toolbar flex items-center justify-between flex-wrap gap-3">
-        <h3
-          className="text-base font-semibold"
-          style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}
-        >
-          Daftar Kamar
-        </h3>
+      <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari kamar atau asrama..." filter={asramaFilter} onFilterChange={setAsramaFilter} filterLabel="Asrama" options={[{ value: '', label: 'Semua asrama' }, ...Array.from(new Set(kamar.map(item => item.asrama))).sort().map(value => ({ value, label: value }))]} count={visibleKamar.length} total={kamar.length}>
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => { setShowManageAsrama(true); setManageAsramaError(null) }}
@@ -260,7 +258,7 @@ export default function PoinKamar() {
             Tambah Kamar
           </button>
         </div>
-      </div>
+      </DataToolbar>
 
       {/* ── Kamar list ── */}
       <div
@@ -268,7 +266,9 @@ export default function PoinKamar() {
         style={{ background: 'var(--color-card)' }}
       >
         <div className="divide-y divide-(--color-border)">
+          {kamar.length > 0 && visibleKamar.length === 0 && <p className="p-6 text-sm text-center">Tidak ada kamar yang cocok dengan pencarian.</p>}
           {sorted.map((k, i) => {
+            if (!visibleKamar.includes(k)) return null
             const isOpen = expanded === k.id
             const setoranK = setoranByKamar(k.id)
             const penukaranK = penukaranByKamar(k.id)
@@ -935,5 +935,6 @@ export default function PoinKamar() {
     </div>
   )
 }
+
 
 
