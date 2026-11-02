@@ -1,3 +1,4 @@
+import { BERAT_MIN_KG, validasiSetoran, pesanGagalSetoran } from './utils/setoranValidation'
 import DataToolbar, { matchesSearch } from './components/DataToolbar'
 import { useState, useEffect, useRef } from 'react'
 import { Scale, Wifi, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Send, Activity, AlertCircle, Camera, Trophy } from 'lucide-react'
@@ -13,7 +14,6 @@ type SensorStatus = 'idle' | 'connecting' | 'measuring' | 'stable'
 type FotoStatus = 'tidak' | 'menunggu' | 'ok' | 'gagal'
 
 // ── Pengaturan pembacaan timbangan asli (ESP32) ──
-const BERAT_MIN_KG = 0.01 // di bawah ini dianggap timbangan kosong
 const POLL_MS = 300 // seberapa sering web menanyakan berat ke timbangan
 const STABIL_BERTURUT = 2 // butuh 2x balasan "stabil" yang sama berturut-turut
 const MAKS_GAGAL = 3 // gagal 3x berturut-turut -> tampilkan pesan error
@@ -66,6 +66,7 @@ export default function App() {
   const [finalWeight, setFinalWeight] = useState(0)
   const pollingRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const aktifRef = useRef(false)
+  const sensorTokenRef = useRef(0)
   const [sensorError, setSensorError] = useState<string | null>(null)
   const [successPoin, setSuccessPoin] = useState(0)
   const [submitting, setSubmitting] = useState(false)
@@ -119,6 +120,7 @@ export default function App() {
 
   function stopPolling() {
     aktifRef.current = false
+    sensorTokenRef.current++
     if (pollingRef.current) {
       clearTimeout(pollingRef.current)
       pollingRef.current = null
@@ -131,6 +133,8 @@ export default function App() {
   function activateSensor() {
     stopPolling()
     setSensorError(null)
+    setSubmitError(null)
+    const sensorToken = sensorTokenRef.current
     setSensorStatus('connecting')
     setDisplayWeight(0)
     setFinalWeight(0)
@@ -142,10 +146,10 @@ export default function App() {
     let stabilBerat = -1
 
     const tick = async () => {
-      if (!aktifRef.current) return
+      if (!aktifRef.current || sensorToken !== sensorTokenRef.current) return
       try {
         const r = await bacaTimbangan()
-        if (!aktifRef.current) return
+        if (!aktifRef.current || sensorToken !== sensorTokenRef.current) return
         gagal = 0
 
         if (r.online === false) {
@@ -166,6 +170,12 @@ export default function App() {
           tersambung = true
           setSensorStatus('measuring')
         }
+        if (!Number.isFinite(r.berat)) {
+          stopPolling()
+          setSensorStatus('idle')
+          setSensorError('Data berat dari timbangan tidak valid. Hubungkan ulang ke timbangan; jika berulang, periksa perangkat.')
+          return
+        }
         setDisplayWeight(r.berat)
 
         if (r.stabil && r.berat >= BERAT_MIN_KG) {
@@ -182,6 +192,7 @@ export default function App() {
           stabilBerat = -1
         }
       } catch {
+        if (!aktifRef.current || sensorToken !== sensorTokenRef.current) return
         gagal++
         if (gagal >= MAKS_GAGAL) {
           stopPolling()
@@ -213,7 +224,14 @@ export default function App() {
 
   async function handleSubmit() {
     if (submitLock.current) return
-    if (!selectedKamar || !selectedJenis || !finalWeight) return
+    const validationError = validasiSetoran(
+      !!selectedKamar && allKamar.some(k => k.id === selectedKamar.id),
+      !!selectedJenis && tarifSampah.some(t => t.id === selectedJenis.id),
+      finalWeight,
+      sensorStatus === 'stable',
+    )
+    if (validationError) { setSubmitError(validationError); return }
+    if (!selectedKamar || !selectedJenis) return
     submitLock.current = true
     setSubmitting(true)
     setSubmitError(null)
@@ -223,7 +241,7 @@ export default function App() {
       setStep('sukses')
       void ambilFotoBukti(res.id) // tidak ditunggu: setoran sudah tercatat, foto menyusul
     } catch (e) {
-      setSubmitError(e instanceof ApiError ? e.message : 'Gagal mengirim setoran. Coba lagi.')
+      setSubmitError(pesanGagalSetoran(e))
     } finally {
       submitLock.current = false
       setSubmitting(false)
@@ -361,7 +379,7 @@ export default function App() {
             <p className="text-sm" style={{ color: 'var(--color-foreground)' }}>
               {fotoStatus === 'menunggu' && 'Mengambil foto... jangan angkat sampah dulu.'}
               {fotoStatus === 'ok' && 'Foto bukti tersimpan. Terima kasih!'}
-              {fotoStatus === 'gagal' && 'Foto belum masuk, tapi setoranmu tetap tercatat.'}
+              {fotoStatus === 'gagal' && 'Foto belum terkonfirmasi, tetapi setoranmu sudah tercatat. Jangan kirim setoran yang sama lagi hanya untuk mengambil foto.'}
             </p>
           </div>
         )}
@@ -725,7 +743,8 @@ export default function App() {
         {step === 'sensor' && (
           <div>
             <button
-              onClick={() => { setStep('jenis'); resetSensor() }}
+              onClick={() => { setStep('jenis'); resetSensor(); setSubmitError(null) }}
+              disabled={submitting}
               className="flex items-center gap-1 text-sm mb-3 py-2"
               style={{ color: 'var(--color-muted-foreground)' }}
             >
@@ -753,6 +772,7 @@ export default function App() {
 
             {(submitError || sensorError) && (
               <div
+                role="alert"
                 className="mb-4 rounded-xl p-3 text-sm flex items-center gap-2"
                 style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}
               >
@@ -934,5 +954,6 @@ export default function App() {
     </div>
   )
 }
+
 
 
