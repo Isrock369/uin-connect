@@ -1,3 +1,4 @@
+import DataToolbar, { matchesSearch } from '../components/DataToolbar'
 import { useEffect, useState } from 'react'
 import { Plus, Pencil, Trash2, X, Check, Package, AlertTriangle } from 'lucide-react'
 import { getKatalog, createBarang, updateBarang, deleteBarang } from '../api/services'
@@ -24,6 +25,7 @@ interface BarangForm {
 const emptyForm: BarangForm = { nama: '', kategori: 'Kebutuhan Mandi', hargaPoin: 0, stok: 0, deskripsi: '' }
 
 export default function KatalogBarang() {
+  const [query, setQuery] = useState('')
   const [barang, setBarang] = useState<BarangKatalog[]>([])
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -50,7 +52,7 @@ export default function KatalogBarang() {
   useEffect(loadAll, [])
 
   const filtered =
-    filterKategori === 'Semua' ? barang : barang.filter((b) => b.kategori === filterKategori)
+    barang.filter((b) => (filterKategori === 'Semua' || b.kategori === filterKategori) && matchesSearch(query, b.nama, b.kategori, b.deskripsi))
 
   function openAdd() {
     setEditTarget(null)
@@ -118,22 +120,7 @@ export default function KatalogBarang() {
         </div>
       )}
 
-      <div className="page-toolbar flex items-center justify-between flex-wrap gap-3">
-        <div className="flex gap-2 flex-wrap">
-          {kategoriList.map((k) => (
-            <button
-              key={k}
-              onClick={() => setFilterKategori(k)}
-              className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-              style={{
-                background: filterKategori === k ? 'var(--color-primary)' : 'var(--color-muted)',
-                color: filterKategori === k ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
-              }}
-            >
-              {k}
-            </button>
-          ))}
-        </div>
+      <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari barang atau kategori..." filter={filterKategori} onFilterChange={setFilterKategori} filterLabel="Kategori" options={kategoriList.map(value => ({ value, label: value === 'Semua' ? 'Semua kategori' : value }))} count={filtered.length} total={barang.length}>
         <button
           onClick={openAdd}
           className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-80"
@@ -142,7 +129,7 @@ export default function KatalogBarang() {
           <Plus size={15} />
           Tambah Barang
         </button>
-      </div>
+      </DataToolbar>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
         {filtered.map((b) => (
@@ -400,4 +387,5 @@ export default function KatalogBarang() {
     </div>
   )
 }
+
 
