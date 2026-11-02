@@ -1,4 +1,5 @@
-import { BookOpen, Pencil, Trash2, Plus, Search, FolderOpen, FileText } from 'lucide-react'
+import DataToolbar, { matchesSearch } from '../components/DataToolbar'
+import { BookOpen, Pencil, Trash2, Plus, FolderOpen, FileText } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { getModul, createModul, updateModul, deleteModul, getModulFile, getKategoriPanduan, saveKategoriPanduan, deleteKategoriPanduan } from '../api/services'
 import type { ModulInput } from '../api/services'
@@ -112,22 +113,20 @@ export default function Panduan() {
     finally { setBusy(false) }
   }
 
+  const visibleModules = modules.filter(module => (filter === 'Semua' || module.kategoriId === filter) && matchesSearch(query, module.judul, module.deskripsi, module.kategori))
   return <div className="page-guides space-y-5 text-(--color-foreground)">
-    <div className="guide-toolbar page-toolbar">
-      <label className="guide-search relative min-w-0"><Search size={16} className="absolute left-3 top-3 text-(--color-muted-foreground)" /><input aria-label="Cari panduan" placeholder="Cari judul atau deskripsi..." className={control + ' pl-9'} value={query} onChange={event => setQuery(event.target.value)} /></label>
-      <select aria-label="Filter kategori" className={control + ' guide-filter'} value={filter} onChange={event => setFilter(event.target.value)}><option value="Semua">Semua kategori</option>{categories.map(category => <option key={category.id} value={category.id}>{category.nama}</option>)}</select>
-      <button className={button + ' guide-manage'} onClick={() => { setError(''); setManage(true) }}><FolderOpen size={16} />Kelola Kategori</button>
-      <button disabled={loading || !categories.length} className={primary + ' guide-add'} onClick={() => edit(null)}><Plus size={16} />Tambah Panduan</button>
-    </div>
+    <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari judul, deskripsi, atau kategori..." filter={filter} onFilterChange={setFilter} filterLabel="Kategori panduan" options={[{ value: 'Semua', label: 'Semua kategori' }, ...categories.map(category => ({ value: category.id, label: category.nama }))]} count={visibleModules.length} total={modules.length} status={loading ? 'Memuat panduan...' : loadFailed ? 'Panduan belum berhasil dimuat' : undefined}>
+      <button className={button} onClick={() => { setError(''); setManage(true) }}><FolderOpen size={16} />Kelola Kategori</button>
+      <button disabled={loading || !categories.length} className={primary} onClick={() => edit(null)}><Plus size={16} />Tambah Panduan</button>
+    </DataToolbar>
     {error && <p role="alert" className="rounded-xl p-3 text-sm bg-(--color-error-bg) text-(--color-error)">{error}</p>}
-    {!loading && !loadFailed && <p className="text-xs text-(--color-muted-foreground)">{modules.length} panduan tersedia untuk pengurus pesantren</p>}
     {loading ? <p role="status" className="text-sm">Memuat panduan...</p> : loadFailed ? <button className={button} onClick={() => void reload()}>Coba lagi</button> : <div className="grid gap-4 lg:grid-cols-2">
-      {modules.filter(module => (filter === 'Semua' || module.kategoriId === filter) && (module.judul + ' ' + module.deskripsi).toLowerCase().includes(query.toLowerCase())).map(module => <article key={module.id} className="guide-card rounded-2xl border border-(--color-border) bg-(--color-card) p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
+      {visibleModules.map(module => <article key={module.id} className="guide-card rounded-2xl border border-(--color-border) bg-(--color-card) p-5 flex flex-col gap-3 hover:shadow-sm transition-shadow">
         <span className="self-start rounded-full px-2.5 py-1 text-xs font-semibold bg-(--color-secondary) text-(--color-secondary-foreground)">{module.kategori}</span><h3 className="font-semibold text-base">{module.judul}</h3><p className="text-sm text-(--color-muted-foreground) line-clamp-3">{module.deskripsi}</p>
         {module.fileName && <div className="guide-attachment flex items-center gap-2 rounded-xl bg-(--color-muted) p-3 text-xs"><FileText size={18} className="shrink-0 text-(--color-primary)" /><span title={module.fileName} className="truncate flex-1">{module.fileName}</span><button className={button} disabled={busy} onClick={() => openFile(module, false)}>Buka</button><button className={button} disabled={busy} onClick={() => openFile(module, true)}>Unduh</button></div>}
         <div className="flex items-center gap-2 mt-auto pt-3 border-t border-(--color-border)"><button className={button + ' guide-read'} onClick={() => setReading(module)}><BookOpen size={15} />Baca Panduan</button><button className={button + ' ml-auto'} title="Edit panduan" aria-label={'Edit ' + module.judul} onClick={() => edit(module)}><Pencil size={15} /></button><button className={button + ' text-(--color-error)'} title="Hapus panduan" aria-label={'Hapus ' + module.judul} onClick={() => setDeleting(module)}><Trash2 size={15} /></button></div>
       </article>)}
-      {!modules.some(module => (filter === 'Semua' || module.kategoriId === filter) && (module.judul + ' ' + module.deskripsi).toLowerCase().includes(query.toLowerCase())) && <p className="empty-panel lg:col-span-2">Tidak ada panduan yang cocok. Coba kata kunci atau kategori lain.</p>}
+      {visibleModules.length === 0 && <p className="empty-panel lg:col-span-2">Tidak ada panduan yang cocok. Coba kata kunci atau kategori lain.</p>}
     </div>}
     {(showForm || reading || deleting || manage) && <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
       <section role="dialog" aria-modal="true" aria-label={manage ? 'Kelola Kategori' : showForm ? 'Form panduan' : deleting ? 'Hapus panduan' : 'Baca panduan'} className="guide-dialog bg-(--color-card) rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-auto space-y-4">
@@ -161,5 +160,6 @@ export default function Panduan() {
     </div>}
   </div>
 }
+
 
 
