@@ -1,3 +1,4 @@
+import DataToolbar, { matchesSearch } from '../components/DataToolbar'
 import { useEffect, useState, useRef } from 'react'
 import { Check, X, AlertCircle, Filter, Plus, Pencil, Trash2, Camera } from 'lucide-react'
 import { formatTanggal } from '../lib/format'
@@ -58,6 +59,7 @@ const inputStyle: React.CSSProperties = {
 }
 
 export default function VerifikasiSetoran() {
+  const [query, setQuery] = useState('')
   const [setoran, setSetoran] = useState<Setoran[]>([])
   const [kamarData, setKamarData] = useState<Kamar[]>([])
   const [tarifSampah, setTarifSampah] = useState<TarifSampah[]>([])
@@ -106,7 +108,7 @@ export default function VerifikasiSetoran() {
     { id: 'ditolak', label: `Ditolak (${setoran.filter((s) => s.status === 'ditolak').length})` },
   ]
 
-  const filtered = activeTab === 'semua' ? setoran : setoran.filter((s) => s.status === activeTab)
+  const filtered = setoran.filter((s) => (activeTab === 'semua' || s.status === activeTab) && matchesSearch(query, s.kamarNama, s.piket, s.jenisSampah, s.tanggal))
   const sorted = [...filtered].sort((a, b) => new Date(b.tanggal).getTime() - new Date(a.tanggal).getTime())
 
   const selectedTarif = tarifSampah.find((t) => t.id === form.tarifSampahId)
@@ -257,28 +259,7 @@ export default function VerifikasiSetoran() {
       )}
 
       <div className="rounded-2xl border border-(--color-border) overflow-hidden" style={{ background: 'var(--color-card)' }}>
-        <div className="p-4 border-b border-(--color-border) flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-1.5">
-              <Filter size={14} style={{ color: 'var(--color-muted-foreground)' }} />
-              <span className="text-sm font-medium" style={{ color: 'var(--color-muted-foreground)' }}>Filter:</span>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {tabs.map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all"
-                  style={{
-                    background: activeTab === tab.id ? 'var(--color-primary)' : 'var(--color-muted)',
-                    color: activeTab === tab.id ? 'var(--color-primary-foreground)' : 'var(--color-muted-foreground)',
-                  }}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari kamar, piket, atau jenis sampah..." filter={activeTab} onFilterChange={value => setActiveTab(value as FilterTab)} filterLabel="Status setoran" options={tabs.map(tab => ({ value: tab.id, label: tab.label }))} count={sorted.length} total={setoran.length}>
           <button
             onClick={() => { setShowAddModal(true); setForm(emptyForm) }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity shrink-0"
@@ -287,7 +268,7 @@ export default function VerifikasiSetoran() {
             <Plus size={15} />
             Catat Setoran Baru
           </button>
-        </div>
+        </DataToolbar>
 
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -713,5 +694,6 @@ export default function VerifikasiSetoran() {
     </div>
   )
 }
+
 
 
