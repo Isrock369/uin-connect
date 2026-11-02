@@ -104,3 +104,17 @@ div.fixed.inset-0.z-50 > div { max-height: calc(100dvh - 2rem); overflow-y: auto
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
 }
+
+
+/* Shared portal controls; transactional screens retain their dedicated layout. */
+.portal-content { width: 100%; max-width: 880px; margin-inline: auto; padding-bottom: max(24px, env(safe-area-inset-bottom)); }
+.portal-shell > header { padding-inline: max(16px, calc((100% - 848px) / 2)); }
+.portal-shell button { cursor: pointer; min-height: 44px; }
+.portal-shell button:disabled { cursor: not-allowed; }
+.portal-shell button:focus-visible, .portal-shell input:focus-visible, .portal-shell select:focus-visible { outline: 3px solid var(--color-ring); outline-offset: 3px; }
+.portal-shell .data-tools { margin-block: 16px; }
+.portal-shell .data-tools input, .portal-shell .data-tools select { min-width: 0; width: 100%; border: 1px solid var(--color-border); background-color: var(--color-background); color: var(--color-foreground); border-radius: 10px; padding: 10px 12px; font: inherit; }
+.portal-shell .data-tools select { appearance: none; padding-right: 36px; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%235A7A60' stroke-width='2'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; }
+.portal-shell .data-tools-search input { padding-left: 38px; }
+.portal-empty { padding: 24px 16px; border: 1px dashed var(--color-border); border-radius: 14px; background: var(--color-card); color: var(--color-muted-foreground); text-align: center; font-size: 14px; }
+@media (max-width: 639px) { .portal-shell .data-tools input, .portal-shell .data-tools select { font-size: 16px; } }
