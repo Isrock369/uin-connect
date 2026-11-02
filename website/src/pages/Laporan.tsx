@@ -37,6 +37,68 @@ function BarRow({ label, value, max, color, unit }: { label: string; value: numb
   )
 }
 
+const chartPalette = ['#1D7A36', '#D59A12', '#3984C6', '#8B5CB4', '#D16B45', '#26988A', '#697586']
+const chartNumber = (value: number) => value.toLocaleString('id-ID', { maximumFractionDigits: 2 })
+
+function KategoriChart({ totals }: { totals: Record<string, number> }) {
+  const entries = Object.entries(totals)
+    .filter(([, weight]) => Number.isFinite(weight) && weight > 0)
+    .sort(([a], [b]) => a.localeCompare(b, 'id'))
+  const total = entries.reduce((sum, [, weight]) => sum + weight, 0)
+  let offset = 0
+  const segments = entries.map(([name, weight], index) => {
+    const percent = weight / total * 100
+    const segment = { name, weight, percent, offset, color: chartPalette[index % chartPalette.length] }
+    offset += percent
+    return segment
+  })
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-6">
+      <svg viewBox="0 0 240 240" role="img"
+        aria-label={total > 0 ? `Komposisi sampah, total ${chartNumber(total)} kilogram. Rincian tersedia di legenda.` : 'Belum ada setoran disetujui pada periode ini.'}
+        style={{ width: '100%', maxWidth: 220, flexShrink: 0 }}>
+        <circle cx="120" cy="120" r="90" fill="none" stroke="var(--color-muted)" strokeWidth="28" />
+        {segments.map(segment => (
+          <circle key={segment.name} cx="120" cy="120" r="90" fill="none"
+            stroke={segment.color} strokeWidth="28" pathLength="100"
+            strokeDasharray={`${segment.percent} ${100 - segment.percent}`}
+            strokeDashoffset={-segment.offset} transform="rotate(-90 120 120)">
+            <title>{segment.name}: {chartNumber(segment.weight)} kg ({chartNumber(segment.percent)}%)</title>
+          </circle>
+        ))}
+        <text x="120" y="116" textAnchor="middle" fill="var(--color-foreground)" fontSize="26" fontWeight="700">
+          {chartNumber(total)}
+        </text>
+        <text x="120" y="141" textAnchor="middle" fill="var(--color-muted-foreground)" fontSize="13">
+          kg total sampah
+        </text>
+      </svg>
+      {total > 0 ? (
+        <ul className="space-y-3 min-w-0" style={{ flex: '1 1 180px' }} aria-label="Rincian berat per kategori">
+          {segments.map(segment => (
+            <li key={segment.name} className="flex items-start gap-2 text-sm">
+              <svg width="12" height="12" viewBox="0 0 12 12" className="shrink-0 mt-1" aria-hidden="true">
+                <circle cx="6" cy="6" r="5" fill={segment.color} />
+              </svg>
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold break-words">{segment.name}</p>
+                <p className="text-xs" style={{ color: 'var(--color-muted-foreground)' }}>
+                  {chartNumber(segment.weight)} kg · {chartNumber(segment.percent)}%
+                </p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="text-sm text-center" style={{ flex: '1 1 180px', color: 'var(--color-muted-foreground)' }}>
+          Belum ada setoran disetujui pada periode ini.
+        </p>
+      )}
+    </div>
+  )
+}
+
 export default function Laporan() {
   const [activeTab, setActiveTab] = useState<TabId>('poin')
   const [period, setPeriod] = useState<PeriodId>('bulan')
@@ -72,7 +134,7 @@ export default function Laporan() {
 
   const range = reportRange(period)
   const rangeLabel = `${formatReportDate(range.start)} – ${formatReportDate(range.end)}`
-  const { approved: setoranData, pending: menunggu } = setoranForReport(allSetoranData, range)
+  const { approved: setoranData } = setoranForReport(allSetoranData, range)
   const penukaranData = allPenukaranData.filter(row => inRange(row.tanggal, range))
   const penjualanData = allPenjualanData.filter(row => inRange(row.tanggal, range))
   const cash = cashSummary(allKasData, range)
@@ -151,13 +213,6 @@ export default function Laporan() {
           <Download size={14} />
           Cetak / Simpan PDF
         </button>
-      </div>
-
-      <div className="rounded-xl border border-(--color-border) p-3 text-sm space-y-1">
-        <p className="font-semibold">{rangeLabel} (WIB)</p>
-        <p>Minggu dihitung mulai Senin. Transaksi dihitung berdasarkan tanggal transaksi sampai hari ini.</p>
-        <p>Sampah hanya menghitung setoran disetujui. {menunggu.length} setoran masih menunggu ({menunggu.reduce((sum, row) => sum + Number(row.berat), 0).toFixed(1)} kg), belum masuk total.</p>
-        <p>Saldo poin kamar adalah saldo saat data dimuat, bukan perolehan poin periode.</p>
       </div>
 
       <h2 className="hidden print:block text-lg font-semibold" style={{ color: 'var(--color-foreground)' }}>
@@ -275,28 +330,9 @@ export default function Laporan() {
           <div className="space-y-4">
             <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
               <h3 className="text-base font-semibold mb-4" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
-                Breakdown per Kategori
+                Komposisi Sampah per Kategori
               </h3>
-              {Object.entries(jenisByKategori).map(([kat, berat]) => {
-                const color = kategoriColor[kat] ?? 'var(--color-muted-foreground)'
-                const pct = Math.round((berat / totalBerat) * 100)
-                return (
-                  <div key={kat} className="mb-3">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="font-semibold flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full inline-block" style={{ background: color }} />
-                        <span style={{ color: 'var(--color-foreground)' }}>{kat}</span>
-                      </span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-muted-foreground)' }}>
-                        {berat.toFixed(1)} kg ({pct}%)
-                      </span>
-                    </div>
-                    <div className="h-2 rounded-full overflow-hidden" style={{ background: 'var(--color-muted)' }}>
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
-                    </div>
-                  </div>
-                )
-              })}
+              <KategoriChart totals={jenisByKategori} />
             </div>
 
             <div className="rounded-2xl border border-(--color-border) p-5" style={{ background: 'var(--color-card)' }}>
@@ -434,5 +470,6 @@ export default function Laporan() {
     </div>
   )
 }
+
 
 
