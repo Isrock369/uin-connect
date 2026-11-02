@@ -1,3 +1,4 @@
+import DataToolbar, { matchesSearch } from './components/DataToolbar'
 import { useState, useEffect, useRef } from 'react'
 import { Scale, Wifi, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Send, Activity, AlertCircle, Camera, Trophy } from 'lucide-react'
 import logoSrc from './assets/logo.jpeg'
@@ -52,6 +53,11 @@ export default function App() {
   const [loadError, setLoadError] = useState<string | null>(null)
 
   const [step, setStep] = useState<Step>('kamar')
+  const [query, setQuery] = useState('')
+  const [filter, setFilter] = useState('')
+  // Each screen starts with its full list; filters never affect balances or ranks.
+  useEffect(() => { setQuery(''); setFilter('') }, [step])
+
   const [selectedKamar, setSelectedKamar] = useState<Kamar | null>(null)
   const [selectedJenis, setSelectedJenis] = useState<TarifSampah | null>(null)
 
@@ -257,6 +263,14 @@ export default function App() {
     loadData() // refresh saldo poin kamar terbaru
   }
 
+  const visibleKamar = allKamar.filter(k => matchesSearch(query, k.nama, k.asrama) && (!filter || k.asrama === filter))
+  const visibleTarif = tarifSampah.filter(t => matchesSearch(query, t.jenis, t.kategori, t.keterangan) && (!filter || t.kategori === filter))
+  const history = riwayatData?.riwayat ?? []
+  const visibleHistory = history.filter(r => matchesSearch(query, r.jenisSampah, r.tanggal, formatTanggal(r.tanggal), r.catatan) && (!filter || r.status === filter))
+  const roomOptions = [{ value: '', label: 'Semua asrama' }, ...Array.from(new Set(allKamar.map(k => k.asrama))).sort().map(value => ({ value, label: value }))]
+  const roomToolbar = <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari kamar atau asrama..." filter={filter} onFilterChange={setFilter} filterLabel="Asrama" options={roomOptions} count={visibleKamar.length} total={allKamar.length} />
+  const noMatch = <p className="portal-empty" role="status">Tidak ada hasil yang cocok. Ubah pencarian atau reset filter.</p>
+
   const stepIndex = STEPS.indexOf(step)
 
   if (loadingData) {
@@ -367,7 +381,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-dvh flex flex-col" style={{ background: 'var(--color-background)' }}>
+    <div className="portal-shell min-h-dvh flex flex-col" style={{ background: 'var(--color-background)' }}>
       {/* Header */}
       <header
         className="shrink-0 px-4 py-3 border-b flex items-center gap-3"
@@ -428,7 +442,7 @@ export default function App() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-4">
+      <div className="portal-content flex-1 p-4">
         {/* ── Step 1: Pilih Kamar ── */}
         {step === 'kamar' && (
           <div>
@@ -455,11 +469,13 @@ export default function App() {
               </div>
               <ChevronRight size={18} style={{ color: 'var(--color-muted-foreground)' }} className="shrink-0" />
             </button>
+            {roomToolbar}
+            {allKamar.length > 0 && visibleKamar.length === 0 && noMatch}
             {allKamar.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada kamar terdaftar.</p>
             ) : (
-              <div className="grid grid-cols-2 gap-3">
-                {allKamar.map((k) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {visibleKamar.map((k) => (
                   <button
                     key={k.id}
                     onClick={() => { setSelectedKamar(k); setStep('jenis') }}
@@ -499,11 +515,14 @@ export default function App() {
             <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
               Berdasarkan total poin · ketuk kamar untuk lihat riwayat setoran
             </p>
+            {roomToolbar}
+            {allKamar.length > 0 && visibleKamar.length === 0 && noMatch}
             {allKamar.length === 0 ? (
               <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada kamar terdaftar.</p>
             ) : (
               <div className="space-y-2.5">
                 {[...allKamar].sort((a, b) => b.poin - a.poin).map((k, _i, arr) => {
+                  if (!visibleKamar.includes(k)) return null
                   const rank = arr.filter((x) => x.poin > k.poin).length + 1
                   const maxPoin = arr[0]?.poin || 0
                   const pct = maxPoin > 0 ? Math.max(4, (k.poin / maxPoin) * 100) : 0
@@ -579,13 +598,15 @@ export default function App() {
               </div>
             )}
 
+            {riwayatData && !riwayatLoading && !riwayatError && <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari jenis sampah, tanggal, atau catatan..." filter={filter} onFilterChange={setFilter} filterLabel="Status setoran" options={[{ value: '', label: 'Semua status' }, ...Object.entries(STATUS_SETORAN).map(([value, status]) => ({ value, label: status.label }))]} count={visibleHistory.length} total={history.length} />}
+            {riwayatData && history.length > 0 && visibleHistory.length === 0 && noMatch}
             {riwayatData && riwayatData.riwayat.length === 0 && (
               <p className="text-sm py-6 text-center" style={{ color: 'var(--color-muted-foreground)' }}>Belum ada setoran dari kamar ini.</p>
             )}
 
-            {riwayatData && riwayatData.riwayat.length > 0 && (
+            {riwayatData && visibleHistory.length > 0 && (
               <div className="rounded-2xl border overflow-hidden" style={{ borderColor: 'var(--color-border)', background: 'var(--color-card)' }}>
-                {riwayatData.riwayat.map((r) => {
+                {visibleHistory.map((r) => {
                   const st = STATUS_SETORAN[r.status] ?? STATUS_SETORAN.menunggu
                   const cfg = JENIS_CONFIG[r.jenisSampah] ?? JENIS_CONFIG.Residu
                   return (
@@ -617,7 +638,7 @@ export default function App() {
               </div>
             )}
             {riwayatData && riwayatData.riwayat.length >= 30 && (
-              <p className="text-xs text-center mt-2" style={{ color: 'var(--color-muted-foreground)' }}>Menampilkan 30 setoran terakhir.</p>
+              <p className="text-xs text-center mt-2" style={{ color: 'var(--color-muted-foreground)' }}>Pencarian dan filter mencakup 30 setoran terakhir yang dimuat.</p>
             )}
 
             <button
@@ -661,8 +682,10 @@ export default function App() {
             <p className="text-sm mb-4" style={{ color: 'var(--color-muted-foreground)' }}>
               Pilih kategori sampah yang akan disetor
             </p>
+            <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari jenis sampah atau keterangan..." filter={filter} onFilterChange={setFilter} filterLabel="Kategori sampah" options={[{ value: '', label: 'Semua kategori' }, ...Array.from(new Set(tarifSampah.map(t => t.kategori))).filter(Boolean).sort().map(value => ({ value, label: value }))]} count={visibleTarif.length} total={tarifSampah.length} />
+            {tarifSampah.length === 0 ? <p className="portal-empty">Belum ada jenis sampah tersedia.</p> : visibleTarif.length === 0 && noMatch}
             <div className="space-y-3">
-              {tarifSampah.map((tarif) => {
+              {visibleTarif.map((tarif) => {
                 const cfg = JENIS_CONFIG[tarif.jenis] ?? JENIS_CONFIG.Residu
                 return (
                   <button
@@ -911,4 +934,5 @@ export default function App() {
     </div>
   )
 }
+
 
