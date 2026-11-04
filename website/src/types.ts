@@ -1,4 +1,5 @@
 export type PageId =
+  | 'asisten'
   | 'ringkasan'
   | 'verifikasi'
   | 'poin-kamar'
@@ -109,5 +110,6 @@ export interface Kampanye {
   kontak: string
   syarat: string
 }
+
 
 
