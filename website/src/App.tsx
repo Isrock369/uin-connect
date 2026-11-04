@@ -8,6 +8,7 @@ import { getSetoran } from './api/services'
 import type { PageId } from './types'
 
 // Halaman dimuat saat dibuka saja (lazy loading) agar buka pertama lebih cepat
+const Asisten = lazy(() => import('./pages/Asisten'))
 const Ringkasan = lazy(() => import('./pages/Ringkasan'))
 const VerifikasiSetoran = lazy(() => import('./pages/VerifikasiSetoran'))
 const PoinKamar = lazy(() => import('./pages/PoinKamar'))
@@ -20,6 +21,7 @@ const Kampanye = lazy(() => import('./pages/Kampanye'))
 const GantiPassword = lazy(() => import('./pages/GantiPassword'))
 
 const pageTitles: Record<PageId, string> = {
+  asisten: 'Asisten Pengurus',
   'ganti-password': 'Ganti Password',
   ringkasan: 'Dashboard',
   verifikasi: 'Verifikasi Setoran',
@@ -33,6 +35,7 @@ const pageTitles: Record<PageId, string> = {
 }
 
 const pageSubtitles: Record<PageId, string> = {
+  asisten: 'Jawaban cepat dari data bank sampah pesantren',
   'ganti-password': 'Kelola keamanan akun kamu',
   ringkasan: 'Ikhtisar aktivitas MIU Connect',
   verifikasi: 'Tinjau dan setujui setoran sampah dari kamar (dikirim dari Portal Santri)',
@@ -65,6 +68,7 @@ function AdminShell() {
   }
 
   const PageMap: Record<PageId, React.ComponentType> = {
+    asisten: Asisten,
     'ganti-password': GantiPassword,
     ringkasan: Ringkasan,
     verifikasi: VerifikasiSetoran,
@@ -202,5 +206,6 @@ export default function App() {
     </AuthProvider>
   )
 }
+
 
 
