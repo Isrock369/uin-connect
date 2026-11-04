@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef, useState } from 'react'
 import {
   LayoutDashboard,
+  MessageSquare,
   ClipboardCheck,
   Trophy,
   ShoppingBag,
@@ -38,6 +39,7 @@ const navItems: NavItem[] = [
   { id: 'kategori-sampah', label: 'Kategori Sampah', icon: Recycle },
   { id: 'penjualan-kas', label: 'Penjualan & Kas', icon: Wallet },
   { id: 'laporan', label: 'Laporan', icon: BarChart3 },
+  { id: 'asisten', label: 'Asisten Pengurus', icon: MessageSquare },
   { id: 'panduan', label: 'Panduan & Modul', icon: BookOpen, section: 'Edukasi & Instansi' },
   { id: 'kampanye', label: 'Campaign', icon: Megaphone },
 ]
@@ -210,3 +212,4 @@ export default function Sidebar({ currentPage, onNavigate, pendingCount, userNam
     </aside>
   )
 }
+
