@@ -62,6 +62,7 @@ app.use('/api/penjualan', penjualanRoutes)
 app.use('/api/kas', kasRoutes)
 app.use('/api/kampanye', kampanyeRoutes)
 app.use('/api/laporan', laporanRoutes)
+app.use('/api/asisten', require('./routes/asisten.routes'))
 app.use('/api/data', dataRoutes)         // <- endpoint generik untuk ambil data mentah dari tabel MySQL
 app.use('/api/timbangan', timbanganRoutes) // <- berat dari timbangan IoT (ESP32 kirim, Portal Santri baca)
 app.use('/api/kamera', kameraRoutes)       // <- foto bukti setoran dari ESP32-CAM
