@@ -32,8 +32,7 @@ export default function StrukPenukaran({ data, onClose }: {
           <p className="mt-1 text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Bukti penukaran poin kamar</p>
         </div>
         <dl className="space-y-3 text-sm">
-          <div className="flex justify-between gap-4"><dt>No. transaksi</dt><dd className="font-semibold">TUK-{data.id}</dd></div>
-          {data.tanggal && <div className="flex justify-between gap-4"><dt>Tanggal (WIB)</dt><dd>{new Date(`${data.tanggal}T00:00:00+07:00`).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' })}</dd></div>}
+          {data.tanggal && <div className="flex justify-between gap-4"><dt>Tanggal</dt><dd>{new Date(`${data.tanggal}T00:00:00+07:00`).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta', day: 'numeric', month: 'long', year: 'numeric' })}</dd></div>}
           {data.kamarNama && <div className="flex justify-between gap-4"><dt>Kamar</dt><dd className="font-semibold text-right break-words">{data.kamarNama}</dd></div>}
         </dl>
         {data.barangNama && <div className="my-5 border-y border-dashed py-4" style={{ borderColor: 'var(--color-border)' }}>
