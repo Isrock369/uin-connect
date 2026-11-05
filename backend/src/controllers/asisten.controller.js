@@ -26,7 +26,7 @@ function createController(db = pool, clock = () => new Date(), explainResult = e
     async answer(req, res, next) {
       try {
         const { topic } = req.query
-        if (!['poin', 'sampah', 'mingguan'].includes(topic)) return res.status(400).json({ message: 'Pilih pertanyaan yang tersedia.' })
+        if (!['poin', 'sampah', 'mingguan', 'mabna'].includes(topic)) return res.status(400).json({ message: 'Pilih pertanyaan yang tersedia.' })
         const now = clock()
         const p = periods(now)
         const result = { topic, mode: 'data', generatedAt: now.toISOString(), title: '', period: '', summary: '', metrics: [], details: [], note: '' }
@@ -58,6 +58,39 @@ function createController(db = pool, clock = () => new Date(), explainResult = e
             metrics: [{ label: 'Berat disetujui', value: `${fmt(berat)} kg` }, { label: 'Jumlah setoran', value: fmt(jumlah) }, { label: 'Jenis sampah', value: fmt(rows.length) }],
             details, breakdown: details,
             note: rows.length ? 'Dihitung sejak tanggal 1 sampai hari ini (WIB). Setoran menunggu dan ditolak tidak termasuk. Jenis tanpa setoran disetujui tetap ditampilkan dengan nilai nol.' : 'Belum ada jenis sampah terdaftar di Kategori Sampah.'
+          })
+        } else if (topic === 'mabna') {
+          const [rows] = await db.query(`SELECT a.id, a.nama, c.kategori,
+              COALESCE(SUM(w.berat), 0) AS berat, COALESCE(SUM(w.jumlah), 0) AS jumlah
+            FROM asrama AS a
+            LEFT JOIN (SELECT DISTINCT kategori FROM tarif_sampah) AS c ON 1 = 1
+            LEFT JOIN (
+              SELECT k.asrama_id, t.kategori, SUM(s.berat_kg) AS berat, COUNT(s.id) AS jumlah
+              FROM setoran AS s
+              JOIN kamar AS k ON k.id = s.kamar_id
+              JOIN tarif_sampah AS t ON t.id = s.tarif_sampah_id
+              WHERE s.status = 'disetujui' AND s.tanggal BETWEEN ? AND ?
+              GROUP BY k.asrama_id, t.kategori
+            ) AS w ON w.asrama_id = a.id AND w.kategori = c.kategori
+            GROUP BY a.id, a.nama, c.kategori ORDER BY a.nama, a.id, c.kategori`, [p.monthStart, p.today])
+          const grouped = new Map()
+          let berat = 0
+          let jumlah = 0
+          for (const row of rows) {
+            if (!grouped.has(row.id)) grouped.set(row.id, { id: row.id, nama: row.nama, berat: 0, categories: [] })
+            const item = grouped.get(row.id)
+            item.berat += number(row.berat)
+            berat += number(row.berat)
+            jumlah += number(row.jumlah)
+            if (row.kategori !== null) item.categories.push({ label: row.kategori, value: `${fmt(row.berat)} kg · ${fmt(row.jumlah)} setoran` })
+          }
+          const mabna = [...grouped.values()].map(({ berat, ...item }) => ({ ...item, total: `${fmt(berat)} kg` }))
+          Object.assign(result, {
+            title: 'Total sampah per mabna bulan ini', period: `${p.monthStart} – ${p.today} (WIB)`,
+            summary: `Total ${fmt(berat)} kg dari ${fmt(jumlah)} setoran disetujui pada ${fmt(mabna.length)} mabna terdaftar.`,
+            metrics: [{ label: 'Total berat', value: `${fmt(berat)} kg` }, { label: 'Setoran disetujui', value: fmt(jumlah) }, { label: 'Jumlah mabna', value: fmt(mabna.length) }],
+            mabna, breakdown: mabna,
+            note: 'Dihitung sejak tanggal 1 sampai hari ini (WIB), berdasarkan mabna kamar saat ini. Kategori mengikuti Kategori Sampah; jenis dalam kategori yang sama dijumlahkan. Setoran menunggu dan ditolak tidak termasuk. Mabna dan kategori tanpa setoran tetap bernilai nol.'
           })
         } else {
           const aggregate = async (start, end) => {
