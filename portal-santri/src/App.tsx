@@ -1,5 +1,6 @@
 import { BERAT_MIN_KG, validasiSetoran, pesanGagalSetoran } from './utils/setoranValidation'
 import DataToolbar, { matchesSearch } from './components/DataToolbar'
+import AlurSetoran from './components/AlurSetoran'
 import { useState, useEffect, useRef } from 'react'
 import { Scale, Wifi, CheckCircle2, ChevronLeft, ChevronRight, RefreshCw, Send, Activity, AlertCircle, Camera, Trophy } from 'lucide-react'
 import logoSrc from './assets/logo.jpeg'
@@ -334,7 +335,7 @@ export default function App() {
           Setoran Berhasil Dicatat!
         </h2>
         <p className="text-sm mb-8" style={{ color: 'var(--color-muted-foreground)' }}>
-          Menunggu verifikasi pengurus · poin akan segera masuk
+          Menunggu verifikasi pengurus · poin sesuai jenis sampah masuk setelah disetujui
         </p>
 
         <div
@@ -461,6 +462,7 @@ export default function App() {
 
       {/* Content */}
       <div className="portal-content flex-1 p-4">
+        {stepIndex >= 0 && <AlurSetoran key={step} expanded={step === 'kamar'} />}
         {/* ── Step 1: Pilih Kamar ── */}
         {step === 'kamar' && (
           <div>
