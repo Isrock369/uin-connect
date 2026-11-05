@@ -9,8 +9,19 @@
 .alur-setoran__chevron { flex-shrink: 0; color: var(--color-primary); }
 .alur-setoran[open] .alur-setoran__chevron { transform: rotate(180deg); }
 .alur-setoran__body { padding: 0 20px 20px; }
-.alur-setoran__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; gap: 12px; }
-.alur-setoran__steps li { padding: 16px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-background); }
+.alur-setoran__steps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); list-style: none; margin: 0; padding: 0; gap: 32px; }
+.alur-setoran__steps li { position: relative; padding: 16px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-background); }
+/* Alur berkelanjutan: 1 → 2 → 3 ↓ 4 → 5 → 6 (baris kedua ke kiri). */
+@media (min-width: 640px) {
+  .alur-setoran__steps li:nth-child(4) { grid-column: 3; grid-row: 2; }
+  .alur-setoran__steps li:nth-child(5) { grid-column: 2; grid-row: 2; }
+  .alur-setoran__steps li:nth-child(6) { grid-column: 1; grid-row: 2; }
+  .alur-setoran__steps li:nth-child(1)::after,
+  .alur-setoran__steps li:nth-child(2)::after { content: ''; position: absolute; top: 50%; left: 100%; width: 32px; height: 10px; transform: translateY(-50%); background: var(--color-primary); clip-path: polygon(0 40%, 75% 40%, 75% 0, 100% 50%, 75% 100%, 75% 60%, 0 60%); }
+  .alur-setoran__steps li:nth-child(4)::after,
+  .alur-setoran__steps li:nth-child(5)::after { content: ''; position: absolute; top: 50%; right: 100%; width: 32px; height: 10px; transform: translateY(-50%) rotate(180deg); background: var(--color-primary); clip-path: polygon(0 40%, 75% 40%, 75% 0, 100% 50%, 75% 100%, 75% 60%, 0 60%); }
+  .alur-setoran__steps li:nth-child(3)::after { content: ''; position: absolute; left: 50%; top: 100%; width: 10px; height: 32px; transform: translateX(-50%); background: var(--color-primary); clip-path: polygon(40% 0, 60% 0, 60% 75%, 100% 75%, 50% 100%, 0 75%, 40% 75%); }
+}
 .alur-setoran__marker { display: flex; align-items: center; justify-content: space-between; color: var(--color-primary); margin-bottom: 12px; }
 .alur-setoran__marker span { font-size: 12px; font-weight: 700; letter-spacing: .06em; }
 .alur-setoran__steps h3 { font-size: 14px; font-weight: 700; margin: 0 0 6px; }
@@ -22,9 +33,9 @@
 @media (max-width: 639px) {
   .alur-setoran__heading { padding: 16px; }
   .alur-setoran__body { padding: 0 16px 16px; }
-  .alur-setoran__steps { grid-template-columns: 1fr; gap: 0; }
-  .alur-setoran__steps li { display: flex; gap: 14px; padding: 14px 0; background: none; border: 0; border-radius: 0; }
-  .alur-setoran__steps li + li { border-top: 1px solid var(--color-border); }
+  .alur-setoran__steps { grid-template-columns: 1fr; gap: 28px; }
+  .alur-setoran__steps li { display: flex; gap: 14px; padding: 14px 12px; }
+  .alur-setoran__steps li:not(:last-child)::after { content: ''; position: absolute; left: 29px; top: 100%; width: 10px; height: 28px; transform: translateX(-50%); background: var(--color-primary); clip-path: polygon(40% 0, 60% 0, 60% 75%, 100% 75%, 50% 100%, 0 75%, 40% 75%); }
   .alur-setoran__marker { flex-direction: column; justify-content: flex-start; gap: 5px; width: 34px; flex-shrink: 0; margin: 2px 0 0; }
   .alur-setoran__steps h3 { margin-bottom: 3px; }
 }
