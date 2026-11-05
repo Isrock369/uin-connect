@@ -9,7 +9,7 @@ import type { PenjualanOrganik, TransaksiKas } from '../types'
 
 type TabId = 'penjualan' | 'kas'
 
-const produkOrganik = ['Kompos', 'Pakan Maggot']
+const produkAwal = ['Kompos', 'Pakan Maggot']
 
 interface PenjualanForm {
   pembeli: string
@@ -28,9 +28,9 @@ interface KasForm {
 
 const emptyPenjualan: PenjualanForm = {
   pembeli: '',
-  produk: 'Kompos',
+  produk: '',
   jumlah: 0,
-  hargaPerKg: 3000,
+  hargaPerKg: 0,
   tanggal: todayWib(),
 }
 
@@ -54,6 +54,13 @@ export default function PenjualanKas() {
   const [penjualanForm, setPenjualanForm] = useState<PenjualanForm>(emptyPenjualan)
   const [kasForm, setKasForm] = useState<KasForm>(emptyKas)
 
+  const [penjualanError, setPenjualanError] = useState<string | null>(null)
+  const pilihanProduk = Array.from(new Map(
+    [...produkAwal, ...penjualan.map(p => p.produk)]
+      .map(nama => nama.trim()).filter(Boolean)
+      .map(nama => [nama.toLocaleLowerCase('id-ID'), nama])
+  ).values()).sort((a, b) => a.localeCompare(b, 'id-ID'))
+
   function loadAll() {
     setLoading(true)
     Promise.all([getPenjualan(), getKas()])
@@ -74,17 +81,27 @@ export default function PenjualanKas() {
 
   async function addPenjualan() {
     if (addPenjualanLock.current) return
-    if (!penjualanForm.pembeli || penjualanForm.jumlah <= 0) return
+    const produkInput = penjualanForm.produk.trim()
+    const produk = pilihanProduk.find(p => p.toLocaleLowerCase('id-ID') === produkInput.toLocaleLowerCase('id-ID')) || produkInput
+    if (!produk || Array.from(produk).length > 100) {
+      setPenjualanError('Nama produk wajib diisi, maksimal 100 karakter.')
+      return
+    }
+    if (!penjualanForm.pembeli.trim() || !Number.isFinite(penjualanForm.jumlah) || penjualanForm.jumlah <= 0 || !Number.isFinite(penjualanForm.hargaPerKg) || penjualanForm.hargaPerKg <= 0) {
+      setPenjualanError('Isi pembeli, jumlah, dan harga per kg yang lebih dari nol.')
+      return
+    }
+    setPenjualanError(null)
     addPenjualanLock.current = true
     setAddPenjualanBusy(true)
     setErrorMsg(null)
     try {
-      await createPenjualan(penjualanForm)
+      await createPenjualan({ ...penjualanForm, pembeli: penjualanForm.pembeli.trim(), produk })
       setShowPenjualanModal(false)
       setPenjualanForm(emptyPenjualan)
       loadAll()
     } catch (e) {
-      setErrorMsg(e instanceof ApiError ? e.message : 'Gagal mencatat penjualan.')
+      setPenjualanError(e instanceof ApiError ? e.message : 'Gagal mencatat penjualan.')
     } finally {
       addPenjualanLock.current = false
       setAddPenjualanBusy(false)
@@ -200,7 +217,7 @@ export default function PenjualanKas() {
         <div>
           <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari pembeli, produk, atau tanggal..." filter={kindFilter} onFilterChange={setKindFilter} filterLabel="Produk" options={[{ value: '', label: 'Semua produk' }, ...Array.from(new Set(penjualan.map(item => item.produk))).sort().map(value => ({ value, label: value }))]} count={visiblePenjualan.length} total={penjualan.length}>
             <button
-              onClick={() => { setPenjualanForm({ ...emptyPenjualan, tanggal: todayWib() }); setShowPenjualanModal(true) }}
+              onClick={() => { setPenjualanForm({ ...emptyPenjualan, tanggal: todayWib() }); setPenjualanError(null); setShowPenjualanModal(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
               style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
             >
@@ -329,7 +346,7 @@ export default function PenjualanKas() {
 
       {showPenjualanModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" style={{ background: 'rgba(26,18,8,0.5)' }}>
-          <div className="w-full max-w-md rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <div className="w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl p-4 sm:p-6 shadow-xl" style={{ background: 'var(--color-card)' }}>
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold" style={{ fontFamily: 'var(--font-display)', color: 'var(--color-foreground)' }}>
                 Catat Penjualan Organik
@@ -339,6 +356,7 @@ export default function PenjualanKas() {
               </button>
             </div>
 
+            {penjualanError && <p role="alert" className="mb-4 rounded-xl p-3 text-sm" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>{penjualanError}</p>}
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>Tanggal</label>
@@ -354,16 +372,20 @@ export default function PenjualanKas() {
                   style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }} />
               </div>
               <div>
-                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }}>Produk</label>
-                <select value={penjualanForm.produk}
-                  onChange={(e) => {
-                    const produk = e.target.value
-                    setPenjualanForm((f) => ({ ...f, produk, hargaPerKg: produk === 'Kompos' ? 3000 : 5000 }))
-                  }}
+                <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }} htmlFor="penjualan-produk">Produk</label>
+                <input id="penjualan-produk" list="pilihan-produk-penjualan"
+                  value={penjualanForm.produk} maxLength={100}
+                  aria-describedby="produk-help" disabled={addPenjualanBusy}
+                  placeholder="Pilih atau ketik nama produk"
+                  onChange={(e) => setPenjualanForm((f) => ({ ...f, produk: e.target.value }))}
                   className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
-                  style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}>
-                  {produkOrganik.map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
+                  style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }} />
+                <datalist id="pilihan-produk-penjualan">
+                  {pilihanProduk.map(p => <option key={p} value={p} />)}
+                </datalist>
+                <p id="produk-help" className="text-xs mt-2 text-(--color-muted-foreground)">
+                  Ketik produk baru atau pilih saran. Produk tersimpan setelah penjualan berhasil dicatat. Harga diisi sendiri per kg.
+                </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -470,6 +492,7 @@ export default function PenjualanKas() {
     </div>
   )
 }
+
 
 
 
