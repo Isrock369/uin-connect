@@ -17,17 +17,24 @@ async function getAll(req, res) {
 // POST /api/penukaran (protected) — kurangi poin kamar & stok barang dalam 1 transaksi
 async function create(req, res) {
   return tx.run(req, res, 'penukaran', b => ({ kamarId: tx.number(b.kamarId, 'Kamar'), barangId: tx.number(b.barangId, 'Barang'), jumlah: tx.number(b.jumlah, 'Jumlah') }), async (conn, d) => {
-    const [[kamar]] = await conn.query('SELECT poin FROM kamar WHERE id = ? FOR UPDATE', [d.kamarId])
-    const [[barang]] = await conn.query('SELECT harga_poin, stok FROM barang_katalog WHERE id = ? FOR UPDATE', [d.barangId])
+    const [[kamar]] = await conn.query('SELECT nama, poin FROM kamar WHERE id = ? FOR UPDATE', [d.kamarId])
+    const [[barang]] = await conn.query('SELECT nama, harga_poin, stok FROM barang_katalog WHERE id = ? FOR UPDATE', [d.barangId])
     if (!kamar || !barang) throw new tx.InputError('Kamar atau barang tidak ditemukan.', 404)
     const totalPoin = barang.harga_poin * d.jumlah
     if (!Number.isSafeInteger(totalPoin) || totalPoin > 4294967295) throw new tx.InputError('Total poin melebihi batas.')
     if (kamar.poin < totalPoin) throw new tx.InputError('Poin kamar tidak cukup untuk penukaran ini.')
     if (barang.stok < d.jumlah) throw new tx.InputError('Stok barang tidak mencukupi.')
-    const [r] = await conn.query('INSERT INTO penukaran (kamar_id, barang_id, jumlah, poin_digunakan, tanggal, diproses_oleh) VALUES (?, ?, ?, ?, ?, ?)', [d.kamarId, d.barangId, d.jumlah, totalPoin, todayWib(), req.user.id])
+    const tanggal = todayWib()
+    const poinSebelum = Number(kamar.poin)
+    const [r] = await conn.query('INSERT INTO penukaran (kamar_id, barang_id, jumlah, poin_digunakan, tanggal, diproses_oleh) VALUES (?, ?, ?, ?, ?, ?)', [d.kamarId, d.barangId, d.jumlah, totalPoin, tanggal, req.user.id])
     await conn.query('UPDATE kamar SET poin = poin - ? WHERE id = ?', [totalPoin, d.kamarId])
     await conn.query('UPDATE barang_katalog SET stok = stok - ? WHERE id = ?', [d.jumlah, d.barangId])
-    return { id: r.insertId, poinDigunakan: totalPoin }
+    return {
+      id: r.insertId, tanggal,
+      kamarNama: kamar.nama, barangNama: barang.nama,
+      jumlah: d.jumlah, hargaPoin: Number(barang.harga_poin),
+      poinDigunakan: totalPoin, poinSebelum, poinSesudah: poinSebelum - totalPoin,
+    }
   })
 }
 
