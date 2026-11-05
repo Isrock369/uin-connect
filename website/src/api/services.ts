@@ -114,8 +114,19 @@ export function deleteBarang(id: string) {
 export function getPenukaran() {
   return apiFetch<Penukaran[]>('/penukaran')
 }
+export interface StrukPenukaranData {
+  id: number
+  tanggal: string
+  kamarNama: string
+  barangNama: string
+  jumlah: number
+  hargaPoin: number
+  poinDigunakan: number
+  poinSebelum: number
+  poinSesudah: number
+}
 export function createPenukaran(kamarId: string, barangId: string, jumlah: number) {
-  return apiFetch<{ id: number; poinDigunakan: number }>('/penukaran', {
+  return apiFetch<StrukPenukaranData>('/penukaran', {
     method: 'POST', body: { kamarId, barangId, jumlah },
   })
 }
@@ -197,4 +208,5 @@ export function saveKategoriPanduan(id: string | null, nama: string) {
 export function deleteKategoriPanduan(id: string) {
   return apiFetch('/modul/kategori/' + id, { method: 'DELETE' })
 }
+
 
