@@ -1,27 +1,26 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowRight, Building2, Recycle, TrendingUp, RefreshCw, MessageSquare } from 'lucide-react'
-import { askAssistant, getAssistantAnswer, type AssistantAnswer, type Topic } from '../api/asisten'
+import { ArrowRight, Building2, Recycle, RefreshCw, MessageSquare } from 'lucide-react'
+import { getAssistantAnswer, type AssistantAnswer, type Topic } from '../api/asisten'
 import './Asisten.css'
 
 const questions = [
   { id: 'poin' as Topic, icon: Building2, title: 'Berapa total poin semua mabna?', description: 'Lihat total saldo dan rincian poin seluruh mabna sekaligus.' },
   { id: 'sampah' as Topic, icon: Recycle, title: 'Berapa total sampah bulan ini?', description: 'Lihat total bulanan dan rincian seluruh jenis sampah dari Kategori Sampah.' },
-  { id: 'mingguan' as Topic, icon: TrendingUp, title: 'Bagaimana perkembangan minggu ini?', description: 'Bandingkan berat sampah dan partisipasi kamar dengan minggu lalu.' },
+  { id: 'mabna' as Topic, icon: Building2, title: 'Berapa total sampah per mabna bulan ini?', description: 'Lihat total berat setiap mabna dan rincian seluruh kategori sampah yang tersedia.' },
 ]
 export default function Asisten() {
-  const [busy, setBusy] = useState<Topic | 'question' | null>(null)
+  const [busy, setBusy] = useState<Topic | null>(null)
   const [answer, setAnswer] = useState<AssistantAnswer | null>(null)
-  const [question, setQuestion] = useState('')
   const [error, setError] = useState('')
   const sequence = useRef(0)
   const resultRef = useRef<HTMLElement>(null)
   useEffect(() => () => { sequence.current++ }, [])
-  async function ask(topic: Topic | 'question') {
-    if (busy || (topic === 'question' && !question.trim())) return
+  async function ask(topic: Topic) {
+    if (busy) return
     const request = ++sequence.current
     setBusy(topic); setAnswer(null); setError('')
     try {
-      const data = topic === 'question' ? await askAssistant(question.trim()) : await getAssistantAnswer(topic)
+      const data = await getAssistantAnswer(topic)
       if (request === sequence.current) { setAnswer(data); requestAnimationFrame(() => resultRef.current?.focus()) }
     } catch (e) {
       if (request === sequence.current) setError(e instanceof Error ? e.message : 'Ringkasan gagal dimuat. Silakan coba lagi.')
@@ -41,8 +40,8 @@ export default function Asisten() {
             <h3>{title}</h3><p>{description}</p>
             <div className="assistant-choice">
               <div className="assistant-period">
-                <strong>{id === 'poin' ? 'Semua mabna / asrama' : id === 'sampah' ? 'Semua jenis sampah' : 'Senin sampai hari ini'}</strong>
-                <span>{id === 'poin' ? 'Saldo poin saat ini' : id === 'sampah' ? 'Tanggal 1 sampai hari ini (WIB)' : 'Waktu Indonesia Barat (WIB)'}</span>
+                <strong>{id === 'poin' ? 'Semua mabna / asrama' : id === 'sampah' ? 'Semua jenis sampah' : 'Semua mabna dan kategori sampah'}</strong>
+                <span>{id === 'poin' ? 'Saldo poin saat ini' : id === 'sampah' ? 'Tanggal 1 sampai hari ini (WIB)' : 'Tanggal 1 sampai hari ini (WIB)'}</span>
               </div>
             </div>
             <button className="assistant-action" disabled={!!busy} onClick={() => ask(id)}>
@@ -51,12 +50,6 @@ export default function Asisten() {
           </section>
         })}
       </div>
-      <form className="assistant-question-form" onSubmit={event => { event.preventDefault(); void ask('question') }}>
-        <label htmlFor="assistant-question">Tanyakan data lainnya</label>
-        <p id="assistant-question-help">Tulis pertanyaan tentang saldo semua mabna, semua jenis sampah bulan ini, atau perkembangan minggu ini. Setiap pertanyaan berdiri sendiri; periode lain dan filter khusus belum tersedia.</p>
-        <textarea id="assistant-question" aria-describedby="assistant-question-help" value={question} onChange={event => setQuestion(event.target.value)} maxLength={500} rows={3} disabled={!!busy} placeholder="Contoh: Berapa jumlah sampah yang disetujui bulan ini?" required />
-        <div><small>{question.length}/500 karakter</small><button className="assistant-action" type="submit" disabled={!!busy || !question.trim()}>{busy === 'question' ? 'Memproses pertanyaan...' : 'Tanyakan ke AI'}<ArrowRight size={16} aria-hidden="true" /></button></div>
-      </form>
       <div aria-live="polite" role="status">{busy && <p className="assistant-muted">Mengambil data dan menyiapkan penjelasan AI...</p>}</div>
       {error && <div role="alert" className="assistant-error">{error} Silakan coba kembali.</div>}
       {answer && <section ref={resultRef} tabIndex={-1} className="assistant-result" aria-label="Hasil ringkasan">
@@ -67,9 +60,15 @@ export default function Asisten() {
         {answer.aiExplanation && <div className="assistant-ai"><h3>Penjelasan AI</h3><p>{answer.aiExplanation}</p></div>}
         {answer.aiStatus && <p className="assistant-note" role="status">{answer.aiStatus}</p>}
         {answer.details.length > 0 && <dl className="assistant-details">{answer.details.map((detail, i) => <div key={`${detail.label}-${i}`}><dt>{detail.label}</dt><dd>{detail.value}</dd></div>)}</dl>}
+        {answer.mabna?.map(item => <div key={item.id} className="assistant-ai">
+          <h3>{item.nama} · {item.total}</h3>
+          <dl className="assistant-details">{item.categories.map(category => <div key={category.label}><dt>{category.label}</dt><dd>{category.value}</dd></div>)}</dl>
+          {item.categories.length === 0 && <p>Belum ada kategori sampah terdaftar.</p>}
+        </div>)}
         <p className="assistant-note">{answer.note}</p>
         <p className="assistant-updated">Diperbarui {new Date(answer.generatedAt).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })} WIB</p>
       </section>}
     </div>
   )
 }
+
