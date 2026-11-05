@@ -1,3 +1,4 @@
+import StrukPenukaran from '../components/StrukPenukaran'
 import DataToolbar, { matchesSearch } from '../components/DataToolbar'
 import { useEffect, useState, useRef } from 'react'
 import { Gift, ChevronDown, Trophy, X, Check, Plus, Pencil, Trash2, Users, Settings } from 'lucide-react'
@@ -5,7 +6,7 @@ import { formatTanggal } from '../lib/format'
 import {
   getKamar, getAsrama, createKamar, updateKamar, deleteKamar as deleteKamarApi,
   getSetoran, getPenukaran, createPenukaran, getKatalog, createAsrama, updateAsrama, deleteAsrama,
-  type Asrama,
+  type Asrama, type StrukPenukaranData,
 } from '../api/services'
 import { ApiError } from '../api/client'
 import type { Kamar, Setoran, Penukaran, BarangKatalog } from '../types'
@@ -35,6 +36,8 @@ export default function PoinKamar() {
   const [loading, setLoading] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
+
+  const [struk, setStruk] = useState<StrukPenukaranData | null>(null)
 
   // Redeem state
   const [redeemTarget, setRedeemTarget] = useState<Kamar | null>(null)
@@ -178,7 +181,8 @@ export default function PoinKamar() {
     setRedeemSubmitting(true)
     setErrorMsg(null)
     try {
-      await createPenukaran(redeemTarget.id, selectedBarang.id, jumlah)
+      const hasil = await createPenukaran(redeemTarget.id, selectedBarang.id, jumlah)
+      setStruk(hasil)
       setRedeemTarget(null)
       setSelectedBarang(null)
       setJumlah(1)
@@ -195,12 +199,13 @@ export default function PoinKamar() {
     setoranData.filter((s) => s.kamarId === kamarId && s.status === 'disetujui')
   const penukaranByKamar = (kamarId: string) => penukaran.filter((p) => p.kamarId === kamarId)
 
-  if (loading) {
+  if (loading && !struk) {
     return <p className="text-sm" style={{ color: 'var(--color-muted-foreground)' }}>Memuat data kamar...</p>
   }
 
   return (
     <div className="page-rooms space-y-5">
+      {struk && <StrukPenukaran data={struk} onClose={() => setStruk(null)} />}
       {errorMsg && (
         <div className="rounded-xl p-3 text-sm" style={{ background: 'var(--color-error-bg)', color: 'var(--color-error)' }}>
           {errorMsg}
@@ -808,7 +813,7 @@ export default function PoinKamar() {
               >
                 Tukar Poin — {redeemTarget.nama}
               </h3>
-              <button onClick={() => setRedeemTarget(null)} className="p-1 hover:opacity-60 transition-opacity">
+              <button disabled={redeemSubmitting} onClick={() => setRedeemTarget(null)} className="p-1 hover:opacity-60 transition-opacity">
                 <X size={18} style={{ color: 'var(--color-muted-foreground)' }} />
               </button>
             </div>
@@ -829,7 +834,7 @@ export default function PoinKamar() {
                     <button
                       key={b.id}
                       onClick={() => { setSelectedBarang(b); setJumlah(1) }}
-                      disabled={!canAfford}
+                      disabled={!canAfford || redeemSubmitting}
                       className="text-left p-3 rounded-xl border-2 transition-all"
                       style={{
                         borderColor: isSelected ? 'var(--color-primary)' : 'var(--color-border)',
@@ -866,6 +871,7 @@ export default function PoinKamar() {
                   <span className="text-sm font-medium text-(--color-foreground)">Jumlah</span>
                   <div className="flex items-center gap-3">
                     <button
+                      disabled={redeemSubmitting}
                       onClick={() => setJumlah((j) => Math.max(1, j - 1))}
                       className="w-7 h-7 rounded-lg flex items-center justify-center font-bold text-lg transition-opacity hover:opacity-60"
                       style={{ background: 'var(--color-muted)', color: 'var(--color-foreground)' }}
@@ -879,6 +885,7 @@ export default function PoinKamar() {
                       {jumlah}
                     </span>
                     <button
+                      disabled={redeemSubmitting}
                       onClick={() => {
                         const maxJ = Math.floor(redeemTarget.poin / selectedBarang.hargaPoin)
                         setJumlah((j) => Math.min(selectedBarang.stok, maxJ, j + 1))
@@ -911,9 +918,10 @@ export default function PoinKamar() {
               </div>
             )}
 
+            {errorMsg && <p role="alert" className="mb-4 text-sm" style={{ color: 'var(--color-error)' }}>{errorMsg}</p>}
             <div className="flex justify-end gap-3">
               <button
-                onClick={() => setRedeemTarget(null)}
+                disabled={redeemSubmitting} onClick={() => setRedeemTarget(null)}
                 className="px-4 py-2 rounded-xl text-sm font-medium hover:opacity-80 transition-opacity"
                 style={{ background: 'var(--color-muted)', color: 'var(--color-muted-foreground)' }}
               >
@@ -935,6 +943,7 @@ export default function PoinKamar() {
     </div>
   )
 }
+
 
 
 
