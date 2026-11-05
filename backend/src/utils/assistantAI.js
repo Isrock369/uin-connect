@@ -7,7 +7,7 @@ function createExplainer({ env = process.env, fetchImpl = globalThis.fetch, now 
   return async function explain(result) {
     if (!env.OPENAI_API_KEY) return fallback('AI belum dikonfigurasi. Ringkasan data tetap tersedia.')
     const model = env.OPENAI_MODEL || 'gpt-4.1-mini'
-    const input = JSON.stringify({ topic: result.topic, title: result.title, period: result.period, summary: result.summary, metrics: result.metrics, note: result.note })
+    const input = JSON.stringify({ topic: result.topic, title: result.title, period: result.period, summary: result.summary, metrics: result.metrics, breakdown: result.breakdown, note: result.note })
     const key = model + input
     const time = now()
     for (const [k, entry] of cache) if (entry.expires <= time) cache.delete(k)
