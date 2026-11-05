@@ -54,6 +54,7 @@ export default function PenjualanKas() {
   const [penjualanForm, setPenjualanForm] = useState<PenjualanForm>(emptyPenjualan)
   const [kasForm, setKasForm] = useState<KasForm>(emptyKas)
 
+  const [tambahProdukBaru, setTambahProdukBaru] = useState(false)
   const [penjualanError, setPenjualanError] = useState<string | null>(null)
   const pilihanProduk = Array.from(new Map(
     [...produkAwal, ...penjualan.map(p => p.produk)]
@@ -217,7 +218,7 @@ export default function PenjualanKas() {
         <div>
           <DataToolbar query={query} onQueryChange={setQuery} placeholder="Cari pembeli, produk, atau tanggal..." filter={kindFilter} onFilterChange={setKindFilter} filterLabel="Produk" options={[{ value: '', label: 'Semua produk' }, ...Array.from(new Set(penjualan.map(item => item.produk))).sort().map(value => ({ value, label: value }))]} count={visiblePenjualan.length} total={penjualan.length}>
             <button
-              onClick={() => { setPenjualanForm({ ...emptyPenjualan, tanggal: todayWib() }); setPenjualanError(null); setShowPenjualanModal(true) }}
+              onClick={() => { setPenjualanForm({ ...emptyPenjualan, tanggal: todayWib() }); setTambahProdukBaru(false); setPenjualanError(null); setShowPenjualanModal(true) }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold hover:opacity-80 transition-opacity"
               style={{ background: 'var(--color-primary)', color: 'var(--color-primary-foreground)' }}
             >
@@ -373,18 +374,38 @@ export default function PenjualanKas() {
               </div>
               <div>
                 <label className="block text-xs font-semibold mb-1.5 uppercase tracking-wider" style={{ color: 'var(--color-muted-foreground)' }} htmlFor="penjualan-produk">Produk</label>
-                <input id="penjualan-produk" list="pilihan-produk-penjualan"
-                  value={penjualanForm.produk} maxLength={100}
+                <select id="penjualan-produk"
+                  value={tambahProdukBaru ? 'new' : penjualanForm.produk ? `existing:${penjualanForm.produk}` : ''}
                   aria-describedby="produk-help" disabled={addPenjualanBusy}
-                  placeholder="Pilih atau ketik nama produk"
-                  onChange={(e) => setPenjualanForm((f) => ({ ...f, produk: e.target.value }))}
-                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none"
-                  style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }} />
-                <datalist id="pilihan-produk-penjualan">
-                  {pilihanProduk.map(p => <option key={p} value={p} />)}
-                </datalist>
+                  onChange={(e) => {
+                    const value = e.target.value
+                    setTambahProdukBaru(value === 'new')
+                    setPenjualanForm((f) => ({ ...f, produk: value.startsWith('existing:') ? value.slice(9) : '' }))
+                    setPenjualanError(null)
+                  }}
+                  className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-600"
+                  style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }}>
+                  <option value="" disabled>Pilih produk</option>
+                  {pilihanProduk.map(p => <option key={p} value={`existing:${p}`}>{p}</option>)}
+                  <option value="new">+ Tambah Produk Baru…</option>
+                </select>
+                {tambahProdukBaru && (
+                  <div className="mt-3">
+                    <label htmlFor="nama-produk-baru" className="block text-xs font-semibold mb-1.5 uppercase tracking-wider"
+                      style={{ color: 'var(--color-muted-foreground)' }}>Nama Produk Baru</label>
+                    <input id="nama-produk-baru" type="text" autoFocus maxLength={100}
+                      value={penjualanForm.produk} disabled={addPenjualanBusy} aria-describedby="produk-help"
+                      placeholder="Contoh: Pupuk Cair"
+                      onChange={(e) => {
+                        setPenjualanForm((f) => ({ ...f, produk: e.target.value }))
+                        setPenjualanError(null)
+                      }}
+                      className="w-full rounded-xl border text-sm px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-green-600"
+                      style={{ background: 'var(--color-background)', borderColor: 'var(--color-border)', color: 'var(--color-foreground)' }} />
+                  </div>
+                )}
                 <p id="produk-help" className="text-xs mt-2 text-(--color-muted-foreground)">
-                  Ketik produk baru atau pilih saran. Produk tersimpan setelah penjualan berhasil dicatat. Harga diisi sendiri per kg.
+                  Produk baru tersedia di pilihan setelah penjualan berhasil dicatat. Harga diisi sendiri per kg.
                 </p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
