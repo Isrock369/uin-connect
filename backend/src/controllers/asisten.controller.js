@@ -1,11 +1,21 @@
+const { routeQuestion } = require('../utils/assistantQuestion')
 const { explain } = require('../utils/assistantAI')
 const { pool } = require('../config/db')
 const { periods, comparison } = require('../utils/assistantPeriod')
 const number = value => Number(value || 0)
 const fmt = value => number(value).toLocaleString('id-ID', { maximumFractionDigits: 2 })
-function validId(value) { return typeof value === 'string' && /^[1-9]\d*$/.test(value) && Number.isSafeInteger(Number(value)) }
-function createController(db = pool, clock = () => new Date(), explainResult = explain) {
-  return {
+function createController(db = pool, clock = () => new Date(), explainResult = explain, resolveQuestion = routeQuestion) {
+  const controller = {
+    async question(req, res, next) {
+      res.set('Cache-Control', 'no-store')
+      const question = req.body?.question
+      if (typeof question !== 'string' || !question.trim() || question.length > 500) return res.status(400).json({ message: 'Tulis pertanyaan antara 1–500 karakter.' })
+      let topic
+      try { topic = await resolveQuestion(question) }
+      catch (err) { return res.status(503).json({ message: err.message }) }
+      if (!['poin', 'sampah', 'mingguan'].includes(topic)) return res.status(422).json({ message: 'Pertanyaan ini belum didukung. Tanyakan saldo semua mabna saat ini, total semua jenis sampah bulan ini, atau perkembangan minggu ini. Periode lain dan penyaringan tertentu belum tersedia.' })
+      return controller.answer({ query: { topic } }, res, next)
+    },
     async options(req, res, next) {
       try {
         const [asrama] = await db.query('SELECT id, nama FROM asrama ORDER BY nama')
@@ -15,23 +25,40 @@ function createController(db = pool, clock = () => new Date(), explainResult = e
     },
     async answer(req, res, next) {
       try {
-        const { topic, id } = req.query
+        const { topic } = req.query
         if (!['poin', 'sampah', 'mingguan'].includes(topic)) return res.status(400).json({ message: 'Pilih pertanyaan yang tersedia.' })
-        if (topic !== 'mingguan' && !validId(id)) return res.status(400).json({ message: 'Pilihan mabna atau jenis sampah tidak valid.' })
         const now = clock()
         const p = periods(now)
         const result = { topic, mode: 'data', generatedAt: now.toISOString(), title: '', period: '', summary: '', metrics: [], details: [], note: '' }
         if (topic === 'poin') {
-          const [[asrama]] = await db.query('SELECT id, nama FROM asrama WHERE id = ?', [id])
-          if (!asrama) return res.status(404).json({ message: 'Mabna tidak ditemukan. Muat ulang pilihan.' })
-          const [rows] = await db.query('SELECT nama, poin FROM kamar WHERE asrama_id = ? ORDER BY nama', [id])
+          const [rows] = await db.query(`SELECT a.id, a.nama, COALESCE(SUM(k.poin), 0) AS poin, COUNT(k.id) AS kamar
+            FROM asrama AS a LEFT JOIN kamar AS k ON k.asrama_id = a.id
+            GROUP BY a.id, a.nama ORDER BY a.nama, a.id`)
           const total = rows.reduce((sum, row) => sum + number(row.poin), 0)
-          Object.assign(result, { title: `Saldo poin ${asrama.nama}`, period: `Saldo saat ini · ${p.today} (WIB)`, summary: `${asrama.nama} memiliki saldo ${fmt(total)} poin dari ${rows.length} kamar.`, metrics: [{ label: 'Saldo tersedia', value: `${fmt(total)} poin` }, { label: 'Jumlah kamar', value: String(rows.length) }], details: rows.map(row => ({ label: row.nama, value: `${fmt(row.poin)} poin` })), note: rows.length ? 'Saldo sudah memperhitungkan poin yang ditukar.' : 'Belum ada kamar terdaftar di mabna ini.' })
+          const kamar = rows.reduce((sum, row) => sum + number(row.kamar), 0)
+          const details = rows.map(row => ({ label: row.nama, value: `${fmt(row.poin)} poin · ${fmt(row.kamar)} kamar` }))
+          Object.assign(result, {
+            title: 'Saldo poin semua mabna', period: `Saldo saat ini · ${p.today} (WIB)`,
+            summary: `Total saldo ${fmt(total)} poin dari ${fmt(rows.length)} mabna dan ${fmt(kamar)} kamar.`,
+            metrics: [{ label: 'Total saldo tersedia', value: `${fmt(total)} poin` }, { label: 'Jumlah mabna', value: fmt(rows.length) }, { label: 'Jumlah kamar', value: fmt(kamar) }],
+            details, breakdown: details,
+            note: rows.length ? 'Saldo sudah memperhitungkan poin yang ditukar. Mabna tanpa kamar tetap ditampilkan dengan saldo nol.' : 'Belum ada mabna terdaftar.'
+          })
         } else if (topic === 'sampah') {
-          const [[tarif]] = await db.query('SELECT jenis, kategori FROM tarif_sampah WHERE id = ?', [id])
-          if (!tarif) return res.status(404).json({ message: 'Jenis sampah tidak ditemukan. Muat ulang pilihan.' })
-          const [[row]] = await db.query("SELECT COALESCE(SUM(berat_kg), 0) AS berat, COUNT(*) AS jumlah FROM setoran WHERE status = 'disetujui' AND tarif_sampah_id = ? AND tanggal BETWEEN ? AND ?", [id, p.monthStart, p.today])
-          Object.assign(result, { title: `${tarif.jenis} bulan ini`, period: `${p.monthStart} – ${p.today} (WIB)`, summary: `Total ${tarif.jenis} yang disetujui bulan ini adalah ${fmt(row.berat)} kg dari ${fmt(row.jumlah)} setoran.`, metrics: [{ label: 'Berat disetujui', value: `${fmt(row.berat)} kg` }, { label: 'Jumlah setoran', value: fmt(row.jumlah) }], details: [{ label: 'Kategori', value: tarif.kategori }], note: 'Dihitung sejak tanggal 1 sampai hari ini. Setoran menunggu dan ditolak tidak termasuk.' })
+          const [rows] = await db.query(`SELECT t.id, t.jenis, t.kategori, COALESCE(SUM(s.berat_kg), 0) AS berat, COUNT(s.id) AS jumlah
+            FROM tarif_sampah AS t LEFT JOIN setoran AS s ON s.tarif_sampah_id = t.id
+              AND s.status = 'disetujui' AND s.tanggal BETWEEN ? AND ?
+            GROUP BY t.id, t.jenis, t.kategori ORDER BY t.kategori, t.jenis, t.id`, [p.monthStart, p.today])
+          const berat = rows.reduce((sum, row) => sum + number(row.berat), 0)
+          const jumlah = rows.reduce((sum, row) => sum + number(row.jumlah), 0)
+          const details = rows.map(row => ({ label: `${row.jenis} · ${row.kategori}`, value: `${fmt(row.berat)} kg · ${fmt(row.jumlah)} setoran` }))
+          Object.assign(result, {
+            title: 'Semua jenis sampah bulan ini', period: `${p.monthStart} – ${p.today} (WIB)`,
+            summary: `Total sampah disetujui bulan ini adalah ${fmt(berat)} kg dari ${fmt(jumlah)} setoran. Rincian mencakup seluruh ${fmt(rows.length)} jenis sampah terdaftar.`,
+            metrics: [{ label: 'Berat disetujui', value: `${fmt(berat)} kg` }, { label: 'Jumlah setoran', value: fmt(jumlah) }, { label: 'Jenis sampah', value: fmt(rows.length) }],
+            details, breakdown: details,
+            note: rows.length ? 'Dihitung sejak tanggal 1 sampai hari ini (WIB). Setoran menunggu dan ditolak tidak termasuk. Jenis tanpa setoran disetujui tetap ditampilkan dengan nilai nol.' : 'Belum ada jenis sampah terdaftar di Kategori Sampah.'
+          })
         } else {
           const aggregate = async (start, end) => {
             const [[row]] = await db.query("SELECT COALESCE(SUM(berat_kg), 0) AS berat, COUNT(*) AS jumlah, COUNT(DISTINCT kamar_id) AS kamar FROM setoran WHERE status = 'disetujui' AND tanggal BETWEEN ? AND ?", [start, end])
@@ -46,5 +73,6 @@ function createController(db = pool, clock = () => new Date(), explainResult = e
       } catch (err) { next(err) }
     }
   }
+  return controller
 }
 module.exports = { ...createController(), createController }
