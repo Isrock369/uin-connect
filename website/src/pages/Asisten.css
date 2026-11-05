@@ -41,3 +41,12 @@
 .assistant-ai { padding: 20px; border: 1px solid #cce5d2; border-radius: 12px; background: #f3faf5; margin: 16px 0; }
 .assistant-ai h3 { margin: 0 0 10px; }
 .assistant-ai p { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.7; margin: 0; }
+
+.assistant-question-form { padding: 24px; background: #fff; border: 1px solid #dbe7df; border-radius: 16px; margin-top: 24px; }
+.assistant-question-form label { display: block; font-weight: 700; font-size: 18px; }
+.assistant-question-form p { color: #597160; font-size: 14px; line-height: 1.6; }
+.assistant-question-form textarea { display: block; width: 100%; box-sizing: border-box; padding: 14px; border: 1px solid #cdded1; border-radius: 10px; font: inherit; resize: vertical; }
+.assistant-question-form textarea:focus-visible { outline: 2px solid #1d7934; outline-offset: 2px; }
+.assistant-question-form > div { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-top: 12px; }
+.assistant-question-form .assistant-action { width: auto; margin: 0; }
+@media (max-width: 600px) { .assistant-question-form { padding: 16px; } .assistant-question-form > div { flex-wrap: wrap; } }
